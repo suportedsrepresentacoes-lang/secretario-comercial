@@ -62,6 +62,7 @@ export default function Prospeccao() {
   const [usedRadiusKm, setUsedRadiusKm] = useState<number | null>(null)
 
   const [searching, setSearching] = useState(false)
+  const [slowSearch, setSlowSearch] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [results, setResults] = useState<Establishment[]>([])
   const [savedAsClient, setSavedAsClient] = useState<Set<string>>(new Set())
@@ -123,8 +124,10 @@ export default function Prospeccao() {
   async function handleSearch() {
     if (!draftOrigin || selectedSegments.length === 0) return
     setSearching(true)
+    setSlowSearch(false)
     setSearchError(null)
     setUsedRadiusKm(null)
+    const slowTimer = setTimeout(() => setSlowSearch(true), 7000)
     try {
       const { results: found, usedRadiusKm: usedR } = await searchEstablishmentsWithExpansion(selectedSegments, draftOrigin, radiusKm, { autoExpand })
       setResults(found)
@@ -135,6 +138,8 @@ export default function Prospeccao() {
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : 'Falha ao buscar estabelecimentos. Tente novamente.')
     } finally {
+      clearTimeout(slowTimer)
+      setSlowSearch(false)
       setSearching(false)
     }
   }
@@ -323,6 +328,11 @@ export default function Prospeccao() {
           <Button className="w-full" disabled={!draftOrigin || selectedSegments.length === 0 || searching} onClick={handleSearch}>
             <Search size={15} /> {searching ? 'Buscando…' : 'Buscar Clientes na Região'}
           </Button>
+          {slowSearch && (
+            <p className="text-center text-[11.5px] text-[#8F8676]">
+              Os servidores públicos do OpenStreetMap estão respondendo devagar agora — pode levar até 1 minuto. Continue aguardando…
+            </p>
+          )}
 
           {draftStops.length > 0 && (
             <Button variant="secondary" className="w-full" onClick={() => navigate('/rotas')}>
@@ -371,7 +381,13 @@ export default function Prospeccao() {
             </div>
             {searchError && (
               <div className="flex items-start gap-2 border-b border-[#ECE5D6] px-4 py-3 text-[12.5px] text-[#B9762C]">
-                <AlertCircle size={14} className="mt-0.5 shrink-0" /> {searchError}
+                <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                <span className="flex-1">
+                  {searchError}
+                  <button onClick={handleSearch} className="ml-2 font-medium text-[#3B82F6] underline decoration-dotted">
+                    tentar novamente
+                  </button>
+                </span>
               </div>
             )}
             <div className="max-h-[420px] divide-y divide-[#ECE5D6] overflow-y-auto">

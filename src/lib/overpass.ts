@@ -75,7 +75,11 @@ async function fetchWithTimeout(url: string, body: string, outerSignal: AbortSig
   }
 }
 
-async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] }> {
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function queryOverpassPass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] } | null> {
   const body = `data=${encodeURIComponent(query)}`
   const order = [preferredEndpoint, ...ENDPOINTS.filter((e) => e !== preferredEndpoint)]
   // Um espelho pode responder 200 com uma lista vazia mesmo quando existem resultados de verdade
@@ -86,7 +90,7 @@ async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ ele
   for (const endpoint of order) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     try {
-      const res = await fetchWithTimeout(endpoint, body, signal, 5000)
+      const res = await fetchWithTimeout(endpoint, body, signal, 6000)
       if (!res.ok) continue
       const json = await res.json()
       if (!Array.isArray(json.elements)) continue
@@ -100,7 +104,21 @@ async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ ele
       continue
     }
   }
-  if (emptyButValidFallback) return emptyButValidFallback
+  return emptyButValidFallback
+}
+
+// Os espelhos públicos do Overpass ficam instáveis momento a momento (um pode estar OK agora e
+// falhar em 5s). Se a primeira rodada não trouxe nenhum resultado real de nenhum espelho, esperamos
+// um instante e tentamos todos de novo antes de aceitar "zero resultados" como resposta final.
+async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] }> {
+  const first = await queryOverpassPass(query, signal)
+  if (first && first.elements.length > 0) return first
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+  await sleep(2500)
+  const second = await queryOverpassPass(query, signal)
+  if (second && second.elements.length > 0) return second
+  if (first) return first
+  if (second) return second
   throw new Error(
     'Não foi possível buscar estabelecimentos agora — os servidores públicos do OpenStreetMap podem estar sobrecarregados. Tente novamente em instantes.',
   )
