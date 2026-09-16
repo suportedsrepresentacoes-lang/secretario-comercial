@@ -1,38 +1,33 @@
 import { useState } from 'react'
-import { Download, RotateCcw, Smartphone } from 'lucide-react'
+import { Download, RotateCcw, Smartphone, Fuel } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import Card from '../components/ui/Card'
 import { Button, Field, Input } from '../components/ui/Field'
 import { initials } from '../lib/ui'
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      onClick={() => onChange(!checked)}
-      className={`relative h-5 w-9 rounded-full transition-colors ${checked ? 'bg-[#3FA9A0]' : 'bg-[#2A313D]'}`}
-    >
-      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-4' : 'translate-x-0.5'}`} />
-    </button>
-  )
-}
-
 export default function Configuracoes() {
   const store = useAppStore()
   const [repName, setRepName] = useState(store.repName)
   const [companyName, setCompanyName] = useState(store.companyName)
-  const [notifFollowUp, setNotifFollowUp] = useState(true)
-  const [notifWhatsapp, setNotifWhatsapp] = useState(true)
-  const [notifOrders, setNotifOrders] = useState(false)
+  const [consumo, setConsumo] = useState(String(store.fuelDefaults.consumoKmL))
+  const [preco, setPreco] = useState(String(store.fuelDefaults.precoLitro))
 
   function saveProfile() {
     useAppStore.setState({ repName, companyName })
+  }
+
+  function saveFuel() {
+    store.updateFuelDefaults({
+      consumoKmL: consumo === '' ? 0 : Number(consumo),
+      precoLitro: preco === '' ? 0 : Number(preco),
+    })
   }
 
   return (
     <div className="max-w-2xl space-y-5">
       <div>
         <h1 className="text-[20px] font-bold">Configurações</h1>
-        <p className="mt-1 text-[13px] text-[#8D95A3]">Perfil, notificações e preferências do sistema</p>
+        <p className="mt-1 text-[13px] text-[#8D95A3]">Perfil, combustível e preferências do sistema</p>
       </div>
 
       <Card title="Perfil">
@@ -54,30 +49,19 @@ export default function Configuracoes() {
         <Button onClick={saveProfile}>Salvar perfil</Button>
       </Card>
 
-      <Card title="Notificações">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[13px]">Follow-ups pendentes</div>
-              <div className="text-[11.5px] text-[#8D95A3]">Avisar quando um follow-up vencer</div>
-            </div>
-            <Toggle checked={notifFollowUp} onChange={setNotifFollowUp} />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[13px]">Mensagens de WhatsApp</div>
-              <div className="text-[11.5px] text-[#8D95A3]">Avisar sobre novas mensagens de clientes</div>
-            </div>
-            <Toggle checked={notifWhatsapp} onChange={setNotifWhatsapp} />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[13px]">Mudança de status de pedidos</div>
-              <div className="text-[11.5px] text-[#8D95A3]">Avisar quando um pedido mudar de status</div>
-            </div>
-            <Toggle checked={notifOrders} onChange={setNotifOrders} />
-          </div>
+      <Card title={<span className="flex items-center gap-1.5 text-[13px] font-medium text-[#C7CCD6]"><Fuel size={14} /> Combustível padrão</span>}>
+        <p className="mb-3 text-[12.5px] text-[#8D95A3]">
+          Usado como ponto de partida ao criar uma nova rota. Cada rota permite ajustar esses valores individualmente.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Consumo médio do veículo (km/L)">
+            <Input type="number" step="0.1" value={consumo} onChange={(e) => setConsumo(e.target.value)} />
+          </Field>
+          <Field label="Preço do combustível (R$/L)">
+            <Input type="number" step="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} />
+          </Field>
         </div>
+        <Button onClick={saveFuel}>Salvar combustível</Button>
       </Card>
 
       <Card title="Aplicativo (PWA)">

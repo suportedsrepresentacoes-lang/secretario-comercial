@@ -2,40 +2,23 @@ import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
-import { useAppStore } from '../../store/useAppStore'
 
 const TITLES: Record<string, string> = {
-  '/': 'Dashboard',
+  '/': 'Início',
+  '/prospeccao': 'Mapa / Prospecção',
   '/clientes': 'Clientes',
-  '/mapa': 'Mapa',
   '/rotas': 'Rotas',
-  '/agenda': 'Agenda',
-  '/visitas': 'Visitas',
-  '/crm': 'CRM / Funil',
-  '/whatsapp': 'WhatsApp',
-  '/ia': 'IA Comercial',
-  '/follow-ups': 'Follow-ups',
-  '/pedidos': 'Pedidos',
-  '/produtos': 'Produtos',
-  '/industrias': 'Indústrias',
-  '/comissoes': 'Comissões',
-  '/despesas': 'Despesas',
-  '/relatorios': 'Relatórios',
+  '/historico': 'Histórico',
   '/configuracoes': 'Configurações',
 }
 
 export default function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
-  const refreshOverdueFollowUps = useAppStore((s) => s.refreshOverdueFollowUps)
 
   useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
-
-  useEffect(() => {
-    refreshOverdueFollowUps()
-  }, [refreshOverdueFollowUps])
 
   return (
     <div

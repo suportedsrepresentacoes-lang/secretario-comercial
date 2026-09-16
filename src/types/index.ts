@@ -179,3 +179,71 @@ export interface SavedRoute {
   tempoEstimadoMin: number
   criadoEm: string
 }
+
+// ---- MVP de roteirização (foco atual do produto) ----
+
+export type StopStatus = 'pendente' | 'visitado' | 'nao_visitado'
+export type StopOrigin = 'cliente' | 'prospect'
+
+export interface RouteStop {
+  id: string
+  origem: StopOrigin
+  clientId?: string
+  nome: string
+  endereco: string
+  lat: number
+  lng: number
+  telefone?: string
+  whatsapp?: string
+  segmento?: string
+  status: StopStatus
+  observacao?: string
+}
+
+export type RouteStatus = 'planejada' | 'em_andamento' | 'concluida'
+
+export interface FuelCalc {
+  distanciaKm: number
+  consumoKmL: number
+  precoLitro: number
+  litrosEstimados: number
+  custoEstimado: number
+}
+
+export interface RoutePlan {
+  id: string
+  nome: string
+  origemLat: number
+  origemLng: number
+  paradas: RouteStop[]
+  distanciaTotalKm: number
+  tempoEstimadoMin: number
+  status: RouteStatus
+  combustivel: FuelCalc
+  criadoEm: string
+  iniciadaEm?: string
+  finalizadaEm?: string
+}
+
+export interface FuelDefaults {
+  consumoKmL: number
+  precoLitro: number
+}
+
+export interface Segment {
+  id: string
+  label: string
+  osmTags: { key: string; value: string }[]
+}
+
+export interface Establishment {
+  id: string
+  nome: string
+  endereco: string
+  lat: number
+  lng: number
+  telefone?: string
+  categoria: string
+  horario?: string
+  distanciaKm: number
+}

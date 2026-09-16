@@ -54,3 +54,82 @@ export function buildRoute(origin: { lat: number; lng: number }, clients: Client
     tempoEstimadoMin: Math.round(totalMinutes),
   }
 }
+
+export interface RoutablePoint {
+  lat: number
+  lng: number
+}
+
+function routeLength(origin: RoutablePoint, points: RoutablePoint[]): number {
+  let total = 0
+  let current: RoutablePoint = origin
+  for (const p of points) {
+    total += haversineKm(current, p)
+    current = p
+  }
+  return total
+}
+
+function twoOptSwap<T>(arr: T[], i: number, j: number): T[] {
+  return arr.slice(0, i).concat(arr.slice(i, j + 1).reverse(), arr.slice(j + 1))
+}
+
+// Monta a sequência de paradas: constrói com nearest-neighbor e refina com 2-opt
+// (busca local que desfaz cruzamentos do trajeto), considerando o conjunto todo dos
+// pontos em vez de apenas encadear o mais próximo a cada passo.
+export function optimizeStopOrder<T extends RoutablePoint>(
+  origin: RoutablePoint,
+  points: T[],
+): { ordered: T[]; distanciaTotalKm: number } {
+  if (points.length <= 1) {
+    const dist = points.length ? haversineKm(origin, points[0]) : 0
+    return { ordered: [...points], distanciaTotalKm: Math.round(dist * 10) / 10 }
+  }
+
+  const remaining = [...points]
+  let current: RoutablePoint = origin
+  const nn: T[] = []
+  while (remaining.length) {
+    let bestIdx = 0
+    let bestDist = Infinity
+    remaining.forEach((p, idx) => {
+      const d = haversineKm(current, p)
+      if (d < bestDist) {
+        bestDist = d
+        bestIdx = idx
+      }
+    })
+    const [next] = remaining.splice(bestIdx, 1)
+    nn.push(next)
+    current = next
+  }
+
+  let best = nn
+  let bestLen = routeLength(origin, best)
+  let improved = true
+  let iterations = 0
+  const maxIterations = 60
+  while (improved && iterations < maxIterations) {
+    improved = false
+    iterations++
+    for (let i = 0; i < best.length - 1; i++) {
+      for (let j = i + 1; j < best.length; j++) {
+        const candidate = twoOptSwap(best, i, j)
+        const len = routeLength(origin, candidate)
+        if (len + 1e-6 < bestLen) {
+          best = candidate
+          bestLen = len
+          improved = true
+        }
+      }
+    }
+  }
+
+  return { ordered: best, distanciaTotalKm: Math.round(bestLen * 10) / 10 }
+}
+
+export function estimateTravelMinutes(distanceKm: number, stopsCount: number): number {
+  const avgSpeedKmH = 28
+  const minutesPerStop = 35
+  return Math.round((distanceKm / avgSpeedKmH) * 60 + stopsCount * minutesPerStop)
+}

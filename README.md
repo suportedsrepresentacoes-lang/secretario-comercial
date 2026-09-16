@@ -1,6 +1,8 @@
 # Secretário Comercial
 
-Sistema web/SaaS para representantes comerciais: CRM, clientes, mapa, rotas, agenda, visitas, pedidos, comissões, despesas, WhatsApp e IA comercial com follow-up automático — tudo em uma única plataforma responsiva (desktop, tablet e celular) e instalável como PWA.
+MVP focado em **roteirização e visitas para representantes comerciais**: o representante vê onde está, escolhe um segmento para prospectar, encontra estabelecimentos reais próximos, monta e otimiza a rota do dia, acompanha distância e custo de combustível, inicia a rota e registra as visitas realizadas.
+
+Fluxo principal: **Minha localização → Segmento → Buscar estabelecimentos → Selecionar → Adicionar clientes/prospects → Criar rota → Otimizar → Mapa → Combustível → Iniciar rota → Registrar visitas → Finalizar → Histórico.**
 
 ## Stack
 
@@ -8,12 +10,20 @@ Sistema web/SaaS para representantes comerciais: CRM, clientes, mapa, rotas, age
 - Tailwind CSS v4
 - Zustand (estado global, persistido em `localStorage`)
 - React Router (navegação por hash)
-- Recharts (gráficos)
-- React Leaflet + OpenStreetMap (mapa e rotas)
-- @hello-pangea/dnd (Kanban do CRM)
+- React Leaflet + OpenStreetMap (mapa e rotas, sem chave de API)
+- Overpass API / OpenStreetMap (busca real de estabelecimentos por segmento, sem chave de API — a cobertura depende do quanto a região está mapeada no OSM)
+- @hello-pangea/dnd (reordenar paradas da rota)
 - vite-plugin-pwa (aplicativo instalável / offline)
 
-Os dados são fictícios (seed de demonstração) e ficam salvos no navegador via `localStorage`. Não há backend: WhatsApp, IA comercial e follow-up automático são simulados na interface para demonstrar o fluxo completo.
+Os dados ficam salvos no navegador via `localStorage` (protótipo sem backend — cada dispositivo tem sua própria base).
+
+## Módulos ativos (MVP)
+
+Início, Mapa / Prospecção, Clientes, Rotas, Histórico e Configurações — únicos itens do menu lateral nesta primeira versão.
+
+## Módulos preservados para o futuro
+
+O projeto nasceu como um CRM completo. Os módulos abaixo continuam em `src/pages/` (Dashboard, Mapa, Agenda, Visitas, Crm, WhatsApp, IaComercial, FollowUps, Pedidos, Produtos, Industrias, Comissoes, Despesas, Relatorios) e seus tipos/ações continuam no store (`src/store/useAppStore.ts`), mas **não estão roteados nem visíveis na navegação** desta versão — ficam prontos para serem reativados em `src/App.tsx` quando fizer sentido evoluir o produto.
 
 ## Como rodar
 
@@ -31,6 +41,8 @@ npm run build
 npm run preview
 ```
 
-## Módulos
+Para publicar em subpasta (ex: GitHub Pages), gere o build com o base path correspondente:
 
-Dashboard, Clientes, Mapa, Rotas, Agenda, Visitas, CRM/Funil, WhatsApp, IA Comercial, Follow-ups, Pedidos, Produtos, Indústrias, Comissões, Despesas, Relatórios e Configurações — acessíveis pelo menu lateral.
+```bash
+npm run build -- --base=/nome-do-repositorio/
+```

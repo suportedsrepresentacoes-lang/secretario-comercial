@@ -3,10 +3,13 @@ import { persist } from 'zustand/middleware'
 import { newId } from '../lib/id'
 import { todayISO, addDays, isPast } from '../lib/date'
 import { answerQuery, parseFollowUpCommand } from '../lib/ai'
+import { optimizeStopOrder, estimateTravelMinutes, haversineKm } from '../lib/geo'
+import { computeFuel } from '../lib/fuel'
 import * as seed from '../data/seed'
 import type {
   Client, Industry, Product, Visit, Opportunity, Order, FollowUp, Conversation,
   ChatMessage, AiMessage, Expense, SavedRoute, OpportunityStage, ClientStatus,
+  RoutePlan, RouteStop, StopStatus, FuelDefaults,
 } from '../types'
 
 interface AppState {
@@ -23,6 +26,12 @@ interface AppState {
   savedRoutes: SavedRoute[]
   repName: string
   companyName: string
+
+  routes: RoutePlan[]
+  fuelDefaults: FuelDefaults
+
+  draftOrigin: { lat: number; lng: number } | null
+  draftStops: RouteStop[]
 
   addClient: (c: Omit<Client, 'id' | 'criadoEm'>) => Client
   updateClient: (id: string, patch: Partial<Client>) => void
@@ -68,6 +77,24 @@ interface AppState {
   addSavedRoute: (r: Omit<SavedRoute, 'id' | 'criadoEm'>) => void
   deleteSavedRoute: (id: string) => void
 
+  createRoute: (input: { nome: string; origemLat: number; origemLng: number; paradas: Array<Omit<RouteStop, 'status'>> }) => RoutePlan
+  renameRoute: (routeId: string, nome: string) => void
+  optimizeRoute: (routeId: string) => void
+  reorderRouteStops: (routeId: string, orderedIds: string[]) => void
+  addStopsToRoute: (routeId: string, stops: Array<Omit<RouteStop, 'status'>>) => void
+  removeStopFromRoute: (routeId: string, stopId: string) => void
+  updateRouteFuel: (routeId: string, patch: Partial<Pick<FuelDefaults, 'consumoKmL' | 'precoLitro'>>) => void
+  startRoute: (routeId: string) => void
+  updateStopStatus: (routeId: string, stopId: string, status: StopStatus, observacao?: string) => void
+  finishRoute: (routeId: string) => void
+  deleteRoute: (routeId: string) => void
+  updateFuelDefaults: (patch: Partial<FuelDefaults>) => void
+
+  setDraftOrigin: (origin: { lat: number; lng: number } | null) => void
+  toggleDraftStop: (stop: Omit<RouteStop, 'status'>) => void
+  removeDraftStop: (id: string) => void
+  clearDraft: () => void
+
   resetDemoData: () => void
 }
 
@@ -99,6 +126,11 @@ export const useAppStore = create<AppState>()(
       savedRoutes: [],
       repName: 'Diego Silva',
       companyName: 'DS Representações',
+
+      routes: [],
+      fuelDefaults: { consumoKmL: 10, precoLitro: 6.2 },
+      draftOrigin: null,
+      draftStops: [],
 
       addClient: (c) => {
         const client: Client = { ...c, id: newId(), criadoEm: todayISO() }
@@ -239,6 +271,144 @@ export const useAppStore = create<AppState>()(
         set((s) => ({ savedRoutes: [{ ...r, id: newId(), criadoEm: todayISO() }, ...s.savedRoutes] })),
       deleteSavedRoute: (id) => set((s) => ({ savedRoutes: s.savedRoutes.filter((r) => r.id !== id) })),
 
+      createRoute: ({ nome, origemLat, origemLng, paradas }) => {
+        const origin = { lat: origemLat, lng: origemLng }
+        const withStatus: RouteStop[] = paradas.map((p) => ({ ...p, status: 'pendente' as StopStatus }))
+        const { ordered, distanciaTotalKm } = optimizeStopOrder(origin, withStatus)
+        const tempoEstimadoMin = estimateTravelMinutes(distanciaTotalKm, ordered.length)
+        const { consumoKmL, precoLitro } = get().fuelDefaults
+        const route: RoutePlan = {
+          id: newId(),
+          nome,
+          origemLat,
+          origemLng,
+          paradas: ordered,
+          distanciaTotalKm,
+          tempoEstimadoMin,
+          status: 'planejada',
+          combustivel: computeFuel(distanciaTotalKm, consumoKmL, precoLitro),
+          criadoEm: todayISO(),
+        }
+        set((s) => ({ routes: [route, ...s.routes] }))
+        return route
+      },
+
+      renameRoute: (routeId, nome) =>
+        set((s) => ({ routes: s.routes.map((r) => (r.id === routeId ? { ...r, nome } : r)) })),
+
+      optimizeRoute: (routeId) =>
+        set((s) => ({
+          routes: s.routes.map((r) => {
+            if (r.id !== routeId) return r
+            const origin = { lat: r.origemLat, lng: r.origemLng }
+            const { ordered, distanciaTotalKm } = optimizeStopOrder(origin, r.paradas)
+            const tempoEstimadoMin = estimateTravelMinutes(distanciaTotalKm, ordered.length)
+            return {
+              ...r,
+              paradas: ordered,
+              distanciaTotalKm,
+              tempoEstimadoMin,
+              combustivel: computeFuel(distanciaTotalKm, r.combustivel.consumoKmL, r.combustivel.precoLitro),
+            }
+          }),
+        })),
+
+      reorderRouteStops: (routeId, orderedIds) =>
+        set((s) => ({
+          routes: s.routes.map((r) => {
+            if (r.id !== routeId) return r
+            const byId = new Map(r.paradas.map((p) => [p.id, p]))
+            const paradas = orderedIds.map((id) => byId.get(id)).filter((p): p is RouteStop => !!p)
+            const origin = { lat: r.origemLat, lng: r.origemLng }
+            let current = origin
+            let distanciaTotalKm = 0
+            for (const p of paradas) {
+              distanciaTotalKm += haversineKm(current, p)
+              current = p
+            }
+            distanciaTotalKm = Math.round(distanciaTotalKm * 10) / 10
+            const tempoEstimadoMin = estimateTravelMinutes(distanciaTotalKm, paradas.length)
+            return {
+              ...r,
+              paradas,
+              distanciaTotalKm,
+              tempoEstimadoMin,
+              combustivel: computeFuel(distanciaTotalKm, r.combustivel.consumoKmL, r.combustivel.precoLitro),
+            }
+          }),
+        })),
+
+      addStopsToRoute: (routeId, stops) => {
+        const route = get().routes.find((r) => r.id === routeId)
+        if (!route) return
+        const withStatus: RouteStop[] = stops.map((p) => ({ ...p, status: 'pendente' as StopStatus }))
+        const orderedIds = [...route.paradas.map((p) => p.id), ...withStatus.map((p) => p.id)]
+        set((s) => ({
+          routes: s.routes.map((r) => (r.id === routeId ? { ...r, paradas: [...r.paradas, ...withStatus] } : r)),
+        }))
+        get().reorderRouteStops(routeId, orderedIds)
+      },
+
+      removeStopFromRoute: (routeId, stopId) => {
+        const route = get().routes.find((r) => r.id === routeId)
+        if (!route) return
+        const orderedIds = route.paradas.filter((p) => p.id !== stopId).map((p) => p.id)
+        set((s) => ({
+          routes: s.routes.map((r) => (r.id === routeId ? { ...r, paradas: r.paradas.filter((p) => p.id !== stopId) } : r)),
+        }))
+        get().reorderRouteStops(routeId, orderedIds)
+      },
+
+      updateRouteFuel: (routeId, patch) =>
+        set((s) => ({
+          routes: s.routes.map((r) => {
+            if (r.id !== routeId) return r
+            const consumoKmL = patch.consumoKmL ?? r.combustivel.consumoKmL
+            const precoLitro = patch.precoLitro ?? r.combustivel.precoLitro
+            return { ...r, combustivel: computeFuel(r.distanciaTotalKm, consumoKmL, precoLitro) }
+          }),
+        })),
+
+      startRoute: (routeId) =>
+        set((s) => ({
+          routes: s.routes.map((r) => (r.id === routeId ? { ...r, status: 'em_andamento', iniciadaEm: todayISO() } : r)),
+        })),
+
+      updateStopStatus: (routeId, stopId, status, observacao) =>
+        set((s) => ({
+          routes: s.routes.map((r) =>
+            r.id === routeId
+              ? { ...r, paradas: r.paradas.map((p) => (p.id === stopId ? { ...p, status, observacao: observacao ?? p.observacao } : p)) }
+              : r,
+          ),
+        })),
+
+      finishRoute: (routeId) => {
+        const route = get().routes.find((r) => r.id === routeId)
+        if (route) {
+          route.paradas
+            .filter((p) => p.status === 'visitado' && p.origem === 'cliente' && p.clientId)
+            .forEach((p) => get().updateClient(p.clientId!, { ultimaVisitaEm: todayISO() }))
+        }
+        set((s) => ({
+          routes: s.routes.map((r) => (r.id === routeId ? { ...r, status: 'concluida', finalizadaEm: todayISO() } : r)),
+        }))
+      },
+
+      deleteRoute: (routeId) => set((s) => ({ routes: s.routes.filter((r) => r.id !== routeId) })),
+
+      updateFuelDefaults: (patch) => set((s) => ({ fuelDefaults: { ...s.fuelDefaults, ...patch } })),
+
+      setDraftOrigin: (origin) => set({ draftOrigin: origin }),
+      toggleDraftStop: (stop) =>
+        set((s) => {
+          const exists = s.draftStops.some((p) => p.id === stop.id)
+          if (exists) return { draftStops: s.draftStops.filter((p) => p.id !== stop.id) }
+          return { draftStops: [...s.draftStops, { ...stop, status: 'pendente' as StopStatus }] }
+        }),
+      removeDraftStop: (id) => set((s) => ({ draftStops: s.draftStops.filter((p) => p.id !== id) })),
+      clearDraft: () => set({ draftStops: [] }),
+
       resetDemoData: () =>
         set({
           clients: seed.clients,
@@ -252,6 +422,10 @@ export const useAppStore = create<AppState>()(
           aiMessages: initialAiMessages(),
           expenses: seed.expenses,
           savedRoutes: [],
+          routes: [],
+          fuelDefaults: { consumoKmL: 10, precoLitro: 6.2 },
+          draftOrigin: null,
+          draftStops: [],
         }),
     }),
     { name: 'secretario-comercial-store' },

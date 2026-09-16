@@ -1,41 +1,30 @@
-import { Search, Bell, Mic, Menu } from 'lucide-react'
+import { Search, Bell, Menu } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { useAppStore } from '../../store/useAppStore'
 import { initials } from '../../lib/ui'
-import { isPast, isToday } from '../../lib/date'
 
 export default function Topbar({ onMenuClick, title }: { onMenuClick: () => void; title?: string }) {
   const navigate = useNavigate()
-  const { clients, orders, industries, products, followUps, repName } = useAppStore()
+  const { clients, routes, repName } = useAppStore()
   const [query, setQuery] = useState('')
   const [focused, setFocused] = useState(false)
 
-  const followUpsDue = followUps.filter(
-    (f) => (f.status === 'pendente' || f.status === 'atrasado') && (isToday(f.dataAgendada) || isPast(f.dataAgendada)),
-  ).length
+  const emAndamento = routes.filter((r) => r.status === 'em_andamento').length
 
   const results = useMemo(() => {
     if (!query.trim()) return []
     const q = query.toLowerCase()
     const clientMatches = clients
       .filter((c) => (c.nomeFantasia ?? c.razaoSocial).toLowerCase().includes(q) || c.cnpj.includes(q))
-      .slice(0, 4)
+      .slice(0, 5)
       .map((c) => ({ type: 'Cliente', label: c.nomeFantasia ?? c.razaoSocial, to: `/clientes?id=${c.id}` }))
-    const orderMatches = orders
-      .filter((o) => o.numero.toLowerCase().includes(q))
-      .slice(0, 3)
-      .map((o) => ({ type: 'Pedido', label: o.numero, to: `/pedidos?id=${o.id}` }))
-    const industryMatches = industries
-      .filter((i) => i.nome.toLowerCase().includes(q))
-      .slice(0, 3)
-      .map((i) => ({ type: 'Indústria', label: i.nome, to: `/industrias?id=${i.id}` }))
-    const productMatches = products
-      .filter((p) => p.nome.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
-      .slice(0, 3)
-      .map((p) => ({ type: 'Produto', label: p.nome, to: `/produtos?id=${p.id}` }))
-    return [...clientMatches, ...orderMatches, ...industryMatches, ...productMatches]
-  }, [query, clients, orders, industries, products])
+    const routeMatches = routes
+      .filter((r) => r.nome.toLowerCase().includes(q))
+      .slice(0, 5)
+      .map((r) => ({ type: 'Rota', label: r.nome, to: `/rotas?id=${r.id}` }))
+    return [...clientMatches, ...routeMatches]
+  }, [query, clients, routes])
 
   return (
     <header className="flex items-center justify-between gap-3 border-b border-[#2A313D] px-4 py-3 sm:px-7 sm:py-4">
@@ -51,7 +40,7 @@ export default function Topbar({ onMenuClick, title }: { onMenuClick: () => void
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setTimeout(() => setFocused(false), 150)}
-            placeholder="Buscar cliente, pedido, indústria…"
+            placeholder="Buscar cliente ou rota…"
             className="w-full bg-transparent text-[#F2F0EA] outline-none placeholder:text-[#8D95A3]"
           />
         </div>
@@ -77,18 +66,11 @@ export default function Topbar({ onMenuClick, title }: { onMenuClick: () => void
       {title && <div className="flex-1 text-[15px] font-semibold sm:hidden">{title}</div>}
 
       <div className="flex items-center gap-2.5 sm:gap-4">
-        <button
-          onClick={() => navigate('/ia')}
-          className="flex items-center gap-2 rounded-[6px] border border-[#3FA9A0]/40 bg-[#3FA9A0]/10 px-2.5 py-2 text-[12.5px] font-medium text-[#3FA9A0] sm:px-3"
-        >
-          <Mic size={14} />
-          <span className="hidden sm:inline">Perguntar à IA</span>
-        </button>
-        <button onClick={() => navigate('/follow-ups')} className="relative text-[#8D95A3]">
+        <button onClick={() => navigate('/rotas')} className="relative text-[#8D95A3]">
           <Bell size={18} />
-          {followUpsDue > 0 && (
+          {emAndamento > 0 && (
             <span className="mono absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#E2963C] px-1 text-[9px] font-bold text-[#12151B]">
-              {followUpsDue}
+              {emAndamento}
             </span>
           )}
         </button>

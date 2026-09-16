@@ -1,4 +1,4 @@
-import type { ClientStatus, OpportunityStage, OrderStatus, VisitStatus, FollowUpStatus, ExpenseCategory } from '../types'
+import type { ClientStatus, OpportunityStage, OrderStatus, VisitStatus, FollowUpStatus, ExpenseCategory, StopStatus } from '../types'
 
 export const STATUS_LABEL: Record<ClientStatus, string> = {
   lead: 'Lead',
@@ -75,6 +75,12 @@ export const EXPENSE_CATEGORY_LABEL: Record<ExpenseCategory, string> = {
   manutencao: 'Manutenção do veículo',
   pedagio: 'Pedágio',
   outros: 'Outros',
+}
+
+export const STOP_STATUS_LABEL: Record<StopStatus, string> = {
+  pendente: 'Pendente',
+  visitado: 'Visitado',
+  nao_visitado: 'Não visitado',
 }
 
 export function initials(name: string): string {

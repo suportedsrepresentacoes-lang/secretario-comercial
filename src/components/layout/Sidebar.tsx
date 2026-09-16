@@ -1,44 +1,26 @@
-import {
-  LayoutGrid, Users, Map, Route, Calendar, ClipboardList, Kanban,
-  MessageCircle, Sparkles, BellRing, ShoppingCart, Package, Factory,
-  Wallet, Receipt, FileBarChart, Settings, X,
-} from 'lucide-react'
+import { Home, Compass, Users, Route, History, Settings, X } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useAppStore } from '../../store/useAppStore'
 import { initials } from '../../lib/ui'
-import { isPast, isToday } from '../../lib/date'
 
 const NAV = [
-  { label: 'Dashboard', icon: LayoutGrid, to: '/' },
+  { label: 'Início', icon: Home, to: '/' },
+  { label: 'Mapa / Prospecção', icon: Compass, to: '/prospeccao' },
   { label: 'Clientes', icon: Users, to: '/clientes' },
-  { label: 'Mapa', icon: Map, to: '/mapa' },
   { label: 'Rotas', icon: Route, to: '/rotas' },
-  { label: 'Agenda', icon: Calendar, to: '/agenda' },
-  { label: 'Visitas', icon: ClipboardList, to: '/visitas' },
-  { label: 'CRM / Funil', icon: Kanban, to: '/crm' },
-  { label: 'WhatsApp', icon: MessageCircle, to: '/whatsapp' },
-  { label: 'IA Comercial', icon: Sparkles, to: '/ia' },
-  { label: 'Follow-ups', icon: BellRing, to: '/follow-ups' },
-  { label: 'Pedidos', icon: ShoppingCart, to: '/pedidos' },
-  { label: 'Produtos', icon: Package, to: '/produtos' },
-  { label: 'Indústrias', icon: Factory, to: '/industrias' },
-  { label: 'Comissões', icon: Wallet, to: '/comissoes' },
-  { label: 'Despesas', icon: Receipt, to: '/despesas' },
-  { label: 'Relatórios', icon: FileBarChart, to: '/relatorios' },
+  { label: 'Histórico', icon: History, to: '/historico' },
   { label: 'Configurações', icon: Settings, to: '/configuracoes' },
 ]
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { repName, companyName, followUps, conversations } = useAppStore()
+  const { repName, companyName, routes, draftStops } = useAppStore()
 
-  const followUpsDue = followUps.filter(
-    (f) => (f.status === 'pendente' || f.status === 'atrasado') && (isToday(f.dataAgendada) || isPast(f.dataAgendada)),
-  ).length
-  const unread = conversations.reduce((s, c) => s + c.naoLidas, 0)
+  const emAndamento = routes.filter((r) => r.status === 'em_andamento').length
+  const rascunho = draftStops.length
 
   const badges: Record<string, number> = {
-    'Follow-ups': followUpsDue,
-    WhatsApp: unread,
+    Rotas: emAndamento,
+    'Mapa / Prospecção': rascunho,
   }
 
   return (

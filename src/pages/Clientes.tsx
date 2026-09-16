@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
-import { Plus, Search, ChevronRight, MessageCircle, CalendarPlus, BellPlus, Trash2, Pencil, MapPin } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { Plus, Search, MapPin, Pencil, Trash2, Route as RouteIcon, Check } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import Card from '../components/ui/Card'
 import Drawer from '../components/ui/Drawer'
 import StatusBadge from '../components/ui/StatusBadge'
 import { Button, Field, Input, Select, Textarea } from '../components/ui/Field'
-import { STATUS_LABEL, initials } from '../lib/ui'
-import { currency, daysAgo, formatDate, addDays } from '../lib/date'
+import { STATUS_LABEL, initials, STOP_STATUS_LABEL } from '../lib/ui'
+import { daysAgo, formatDate } from '../lib/date'
 import type { Client, ClientStatus } from '../types'
 
 const STATUS_FILTERS: (ClientStatus | 'todos')[] = ['todos', 'lead', 'novo', 'ativo', 'potencial', 'inativo', 'perdido']
@@ -27,15 +27,13 @@ function emptyClient(): Omit<Client, 'id' | 'criadoEm'> {
 }
 
 export default function Clientes() {
-  const navigate = useNavigate()
-  const { clients, industries, orders, visits, followUps, addClient, updateClient, deleteClient, addFollowUp } = useAppStore()
+  const { clients, routes, addClient, updateClient, deleteClient, toggleDraftStop, draftStops } = useAppStore()
   const [params, setParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<ClientStatus | 'todos'>('todos')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Client | null>(null)
   const [form, setForm] = useState(emptyClient())
-  const [followUpDraft, setFollowUpDraft] = useState({ open: false, days: 7, contexto: '' })
 
   const detailId = params.get('id')
   const detailClient = clients.find((c) => c.id === detailId) ?? null
@@ -83,27 +81,38 @@ export default function Clientes() {
     setFormOpen(false)
   }
 
-  function submitFollowUp() {
-    if (!detailClient) return
-    addFollowUp({
-      clientId: detailClient.id,
-      contexto: followUpDraft.contexto || 'Follow-up agendado manualmente.',
-      dataAgendada: addDays(new Date(), followUpDraft.days).toISOString(),
-      origem: 'manual',
+  function addToRoute(c: Client) {
+    toggleDraftStop({
+      id: c.id,
+      origem: 'cliente',
+      clientId: c.id,
+      nome: c.nomeFantasia ?? c.razaoSocial,
+      endereco: `${c.endereco.logradouro}, ${c.endereco.cidade}/${c.endereco.uf}`,
+      lat: c.endereco.lat,
+      lng: c.endereco.lng,
+      telefone: c.contatos[0]?.telefone,
+      whatsapp: c.contatos[0]?.whatsapp,
+      segmento: c.segmento,
     })
-    setFollowUpDraft({ open: false, days: 7, contexto: '' })
   }
 
-  const clientOrders = detailClient ? orders.filter((o) => o.clientId === detailClient.id) : []
-  const clientVisits = detailClient ? visits.filter((v) => v.clientId === detailClient.id) : []
-  const clientFollowUps = detailClient ? followUps.filter((f) => f.clientId === detailClient.id) : []
+  const clientVisits = useMemo(() => {
+    if (!detailClient) return []
+    const rows: { rota: string; data: string; status: string; observacao?: string }[] = []
+    routes.forEach((r) => {
+      r.paradas
+        .filter((p) => p.clientId === detailClient.id && p.status !== 'pendente')
+        .forEach((p) => rows.push({ rota: r.nome, data: r.finalizadaEm ?? r.iniciadaEm ?? r.criadoEm, status: p.status, observacao: p.observacao }))
+    })
+    return rows.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+  }, [detailClient, routes])
 
   return (
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[20px] font-bold">Clientes</h1>
-          <p className="mt-1 text-[13px] text-[#8D95A3]">{clients.length} clientes cadastrados</p>
+          <p className="mt-1 text-[13px] text-[#8D95A3]">{clients.length} clientes e prospects cadastrados</p>
         </div>
         <Button onClick={openNewForm}>
           <Plus size={15} /> Novo cliente
@@ -138,37 +147,44 @@ export default function Clientes() {
       </div>
 
       <Card className="!p-0 overflow-hidden">
-        <div className="hidden grid-cols-[2fr_1.1fr_1fr_0.8fr_0.9fr_28px] gap-3 border-b border-[#2A313D] px-5 py-3 text-[11.5px] font-medium text-[#8D95A3] md:grid">
+        <div className="hidden grid-cols-[2fr_1.1fr_1fr_0.8fr_0.9fr_100px] gap-3 border-b border-[#2A313D] px-5 py-3 text-[11.5px] font-medium text-[#8D95A3] md:grid">
           <span>Cliente</span>
           <span>Segmento</span>
           <span>Cidade</span>
           <span>Status</span>
-          <span>Última compra</span>
+          <span>Última visita</span>
           <span />
         </div>
         <div className="divide-y divide-[#212833]">
-          {filtered.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => openDetail(c.id)}
-              className="grid w-full grid-cols-2 gap-2 px-5 py-3.5 text-left text-[13px] hover:bg-[#171C24] md:grid-cols-[2fr_1.1fr_1fr_0.8fr_0.9fr_28px] md:items-center md:gap-3"
-            >
-              <div className="col-span-2 flex items-center gap-3 md:col-span-1">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2A313D] text-[11px] font-bold">
-                  {initials(c.nomeFantasia ?? c.razaoSocial)}
-                </div>
-                <div className="min-w-0">
-                  <div className="truncate font-medium text-[#F2F0EA]">{c.nomeFantasia ?? c.razaoSocial}</div>
-                  <div className="truncate text-[11.5px] text-[#8D95A3]">{c.cnpj}</div>
-                </div>
+          {filtered.map((c) => {
+            const inDraft = draftStops.some((p) => p.id === c.id)
+            return (
+              <div
+                key={c.id}
+                className="grid grid-cols-2 gap-2 px-5 py-3.5 text-[13px] md:grid-cols-[2fr_1.1fr_1fr_0.8fr_0.9fr_100px] md:items-center md:gap-3"
+              >
+                <button onClick={() => openDetail(c.id)} className="col-span-2 flex items-center gap-3 text-left md:col-span-1">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2A313D] text-[11px] font-bold">
+                    {initials(c.nomeFantasia ?? c.razaoSocial)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate font-medium text-[#F2F0EA]">{c.nomeFantasia ?? c.razaoSocial}</div>
+                    <div className="truncate text-[11.5px] text-[#8D95A3]">{c.cnpj || 'sem CNPJ'}</div>
+                  </div>
+                </button>
+                <span className="truncate text-[#C7CCD6]">{c.segmento}</span>
+                <span className="truncate text-[#C7CCD6]">{c.endereco.cidade}/{c.endereco.uf}</span>
+                <span><StatusBadge status={c.status} /></span>
+                <span className="mono text-[#8D95A3]">{c.ultimaVisitaEm ? `${daysAgo(c.ultimaVisitaEm)}d atrás` : '—'}</span>
+                <button
+                  onClick={() => addToRoute(c)}
+                  className={`flex items-center justify-center gap-1 rounded-full border px-2 py-1 text-[11px] ${inDraft ? 'border-[#3FA9A0]/50 bg-[#3FA9A0]/15 text-[#3FA9A0]' : 'border-[#2A313D] text-[#8D95A3] hover:text-[#C7CCD6]'}`}
+                >
+                  {inDraft ? <Check size={12} /> : <RouteIcon size={12} />} {inDraft ? 'Na rota' : 'Add à rota'}
+                </button>
               </div>
-              <span className="truncate text-[#C7CCD6]">{c.segmento}</span>
-              <span className="truncate text-[#C7CCD6]">{c.endereco.cidade}/{c.endereco.uf}</span>
-              <span><StatusBadge status={c.status} /></span>
-              <span className="mono text-[#8D95A3]">{c.ultimaCompraEm ? `${daysAgo(c.ultimaCompraEm)}d atrás` : '—'}</span>
-              <ChevronRight size={15} className="hidden text-[#8D95A3] md:block" />
-            </button>
-          ))}
+            )
+          })}
           {filtered.length === 0 && (
             <div className="px-5 py-10 text-center text-[13px] text-[#8D95A3]">Nenhum cliente encontrado.</div>
           )}
@@ -176,14 +192,14 @@ export default function Clientes() {
       </Card>
 
       {/* Detail drawer */}
-      <Drawer open={!!detailClient} onClose={closeDetail} title={detailClient?.nomeFantasia ?? detailClient?.razaoSocial ?? ''} width={520}>
+      <Drawer open={!!detailClient} onClose={closeDetail} title={detailClient?.nomeFantasia ?? detailClient?.razaoSocial ?? ''} width={480}>
         {detailClient && (
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <StatusBadge status={detailClient.status} />
               <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => navigate(`/whatsapp?client=${detailClient.id}`)}>
-                  <MessageCircle size={14} /> WhatsApp
+                <Button variant="secondary" onClick={() => { addToRoute(detailClient); }}>
+                  <RouteIcon size={14} /> Adicionar à rota
                 </Button>
                 <Button variant="secondary" onClick={() => openEditForm(detailClient)}>
                   <Pencil size={14} />
@@ -193,7 +209,7 @@ export default function Clientes() {
 
             <div>
               <div className="text-[15px] font-semibold">{detailClient.razaoSocial}</div>
-              <div className="text-[12.5px] text-[#8D95A3]">{detailClient.cnpj} · {detailClient.segmento}</div>
+              <div className="text-[12.5px] text-[#8D95A3]">{detailClient.cnpj || 'CNPJ não informado'} · {detailClient.segmento}</div>
             </div>
 
             <div className="flex items-start gap-2 text-[13px] text-[#C7CCD6]">
@@ -207,28 +223,15 @@ export default function Clientes() {
             <div>
               <div className="mb-2 text-[12px] font-medium text-[#8D95A3]">Contatos</div>
               <div className="space-y-2">
-                {detailClient.contatos.map((ct) => (
+                {detailClient.contatos.filter((ct) => ct.nome).map((ct) => (
                   <div key={ct.id} className="rounded-[6px] border border-[#2A313D] bg-[#171C24] px-3 py-2 text-[13px]">
                     <div className="font-medium">{ct.nome} {ct.cargo && <span className="text-[#8D95A3]">— {ct.cargo}</span>}</div>
                     <div className="text-[11.5px] text-[#8D95A3]">{ct.telefone}{ct.email ? ` · ${ct.email}` : ''}</div>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-2 text-[12px] font-medium text-[#8D95A3]">Indústrias representadas para este cliente</div>
-              <div className="flex flex-wrap gap-1.5">
-                {detailClient.industriaIds.length === 0 && <span className="text-[12.5px] text-[#8D95A3]">Nenhuma vinculada ainda.</span>}
-                {detailClient.industriaIds.map((id) => {
-                  const ind = industries.find((i) => i.id === id)
-                  if (!ind) return null
-                  return (
-                    <span key={id} className="rounded-full border px-2.5 py-1 text-[11.5px]" style={{ borderColor: `${ind.cor}55`, color: ind.cor, background: `${ind.cor}1A` }}>
-                      {ind.nome}
-                    </span>
-                  )
-                })}
+                {detailClient.contatos.filter((ct) => ct.nome).length === 0 && (
+                  <span className="text-[12.5px] text-[#8D95A3]">Nenhum contato cadastrado.</span>
+                )}
               </div>
             </div>
 
@@ -240,80 +243,18 @@ export default function Clientes() {
             )}
 
             <div>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[12px] font-medium text-[#8D95A3]">Follow-ups</span>
-                <button
-                  className="flex items-center gap-1 text-[11.5px] text-[#E2963C]"
-                  onClick={() => setFollowUpDraft((d) => ({ ...d, open: !d.open }))}
-                >
-                  <BellPlus size={13} /> Novo
-                </button>
-              </div>
-              {followUpDraft.open && (
-                <div className="mb-3 space-y-2 rounded-[6px] border border-[#2A313D] bg-[#171C24] p-3">
-                  <Textarea
-                    rows={2}
-                    placeholder="O que foi combinado?"
-                    value={followUpDraft.contexto}
-                    onChange={(e) => setFollowUpDraft((d) => ({ ...d, contexto: e.target.value }))}
-                  />
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] text-[#8D95A3]">Daqui</span>
-                    <Input
-                      type="number"
-                      className="w-16"
-                      value={followUpDraft.days}
-                      onChange={(e) => setFollowUpDraft((d) => ({ ...d, days: Number(e.target.value) }))}
-                    />
-                    <span className="text-[12px] text-[#8D95A3]">dias</span>
-                    <Button className="ml-auto" onClick={submitFollowUp}>Agendar</Button>
-                  </div>
-                </div>
-              )}
-              <div className="space-y-1.5">
-                {clientFollowUps.length === 0 && <span className="text-[12.5px] text-[#8D95A3]">Nenhum follow-up registrado.</span>}
-                {clientFollowUps.map((f) => (
-                  <div key={f.id} className="flex items-center justify-between rounded-[6px] border border-[#2A313D] bg-[#171C24] px-3 py-2 text-[12.5px]">
-                    <span className="truncate text-[#C7CCD6]">{f.contexto}</span>
-                    <span className="mono shrink-0 pl-2 text-[#E2963C]">{formatDate(f.dataAgendada)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
               <div className="mb-2 text-[12px] font-medium text-[#8D95A3]">Histórico de visitas</div>
               <div className="space-y-1.5">
-                {clientVisits.length === 0 && <span className="text-[12.5px] text-[#8D95A3]">Nenhuma visita registrada.</span>}
-                {clientVisits.map((v) => (
-                  <div key={v.id} className="rounded-[6px] border border-[#2A313D] bg-[#171C24] px-3 py-2 text-[12.5px]">
+                {clientVisits.length === 0 && <span className="text-[12.5px] text-[#8D95A3]">Nenhuma visita registrada ainda.</span>}
+                {clientVisits.map((v, idx) => (
+                  <div key={idx} className="rounded-[6px] border border-[#2A313D] bg-[#171C24] px-3 py-2 text-[12.5px]">
                     <div className="flex items-center justify-between">
-                      <span className="text-[#C7CCD6]">{formatDate(v.dataHora)}</span>
-                      <span className="text-[#8D95A3]">{v.status}</span>
+                      <span className="text-[#C7CCD6]">{v.rota} — {formatDate(v.data)}</span>
+                      <span className={v.status === 'visitado' ? 'text-[#3FA9A0]' : 'text-[#D9695F]'}>{STOP_STATUS_LABEL[v.status as 'visitado' | 'nao_visitado']}</span>
                     </div>
-                    {v.resultado && <div className="mt-1 text-[#8D95A3]">{v.resultado}</div>}
+                    {v.observacao && <div className="mt-1 text-[#8D95A3]">{v.observacao}</div>}
                   </div>
                 ))}
-              </div>
-              <Button variant="secondary" className="mt-2 w-full" onClick={() => navigate(`/agenda?client=${detailClient.id}`)}>
-                <CalendarPlus size={14} /> Agendar visita
-              </Button>
-            </div>
-
-            <div>
-              <div className="mb-2 text-[12px] font-medium text-[#8D95A3]">Histórico de compras</div>
-              <div className="space-y-1.5">
-                {clientOrders.length === 0 && <span className="text-[12.5px] text-[#8D95A3]">Nenhum pedido registrado.</span>}
-                {clientOrders.map((o) => {
-                  const total = o.itens.reduce((s, i) => s + i.quantidade * i.precoUnitario, 0)
-                  return (
-                    <div key={o.id} className="flex items-center justify-between rounded-[6px] border border-[#2A313D] bg-[#171C24] px-3 py-2 text-[12.5px]">
-                      <span className="mono text-[#C7CCD6]">{o.numero}</span>
-                      <span className="text-[#8D95A3]">{formatDate(o.dataCriacao)}</span>
-                      <span className="mono text-[#E2963C]">{currency(total)}</span>
-                    </div>
-                  )
-                })}
               </div>
             </div>
 
@@ -357,22 +298,13 @@ export default function Clientes() {
         <Field label="Segmento">
           <Input value={form.segmento} onChange={(e) => setForm({ ...form, segmento: e.target.value })} placeholder="Ex: Loja de ferragens" />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Classificação">
-            <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ClientStatus })}>
-              {(['lead', 'novo', 'ativo', 'potencial', 'inativo', 'perdido'] as ClientStatus[]).map((s) => (
-                <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Prioridade">
-            <Select value={form.prioridade} onChange={(e) => setForm({ ...form, prioridade: e.target.value as Client['prioridade'] })}>
-              <option value="alta">Alta</option>
-              <option value="media">Média</option>
-              <option value="baixa">Baixa</option>
-            </Select>
-          </Field>
-        </div>
+        <Field label="Classificação">
+          <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ClientStatus })}>
+            {(['lead', 'novo', 'ativo', 'potencial', 'inativo', 'perdido'] as ClientStatus[]).map((s) => (
+              <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+            ))}
+          </Select>
+        </Field>
 
         <div className="mb-1.5 mt-2 text-[12px] font-medium text-[#8D95A3]">Endereço</div>
         <div className="grid grid-cols-2 gap-3">
@@ -392,7 +324,7 @@ export default function Clientes() {
           </Field>
         </div>
 
-        <div className="mb-1.5 mt-2 text-[12px] font-medium text-[#8D95A3]">Contato principal</div>
+        <div className="mb-1.5 mt-2 text-[12px] font-medium text-[#8D95A3]">Contato</div>
         <Field label="Nome">
           <Input
             value={form.contatos[0]?.nome ?? ''}
@@ -400,42 +332,19 @@ export default function Clientes() {
           />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Telefone/WhatsApp">
+          <Field label="Telefone / WhatsApp">
             <Input
               value={form.contatos[0]?.telefone ?? ''}
               onChange={(e) => setForm({ ...form, contatos: [{ ...form.contatos[0], telefone: e.target.value, whatsapp: e.target.value }] })}
             />
           </Field>
-          <Field label="Cargo">
+          <Field label="E-mail">
             <Input
-              value={form.contatos[0]?.cargo ?? ''}
-              onChange={(e) => setForm({ ...form, contatos: [{ ...form.contatos[0], cargo: e.target.value }] })}
+              value={form.contatos[0]?.email ?? ''}
+              onChange={(e) => setForm({ ...form, contatos: [{ ...form.contatos[0], email: e.target.value }] })}
             />
           </Field>
         </div>
-
-        <Field label="Indústrias vinculadas">
-          <div className="flex flex-wrap gap-1.5">
-            {industries.map((ind) => {
-              const checked = form.industriaIds.includes(ind.id)
-              return (
-                <button
-                  type="button"
-                  key={ind.id}
-                  onClick={() =>
-                    setForm({
-                      ...form,
-                      industriaIds: checked ? form.industriaIds.filter((id) => id !== ind.id) : [...form.industriaIds, ind.id],
-                    })
-                  }
-                  className={`rounded-full border px-2.5 py-1 text-[11.5px] ${checked ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#2A313D] text-[#8D95A3]'}`}
-                >
-                  {ind.nome}
-                </button>
-              )
-            })}
-          </div>
-        </Field>
 
         <Field label="Observações">
           <Textarea rows={3} value={form.observacoes ?? ''} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
