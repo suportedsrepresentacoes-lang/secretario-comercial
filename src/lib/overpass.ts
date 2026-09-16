@@ -10,6 +10,14 @@ interface OverpassElement {
   tags?: Record<string, string>
 }
 
+// A instância pública principal do Overpass (overpass-api.de) fica sobrecarregada com frequência.
+// Tentamos espelhos alternativos em sequência antes de desistir, para a busca ser confiável.
+const ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.osm.ch/api/interpreter',
+]
+
 function buildQuery(tags: { key: string; value: string }[], lat: number, lng: number, radiusMeters: number): string {
   const filters = tags
     .map(
@@ -18,12 +26,50 @@ function buildQuery(tags: { key: string; value: string }[], lat: number, lng: nu
         `  way["${t.key}"="${t.value}"](around:${radiusMeters},${lat},${lng});\n`,
     )
     .join('')
-  return `[out:json][timeout:25];\n(\n${filters});\nout center tags 200;`
+  return `[out:json][timeout:20];\n(\n${filters});\nout center tags 200;`
 }
 
 function formatAddress(tags: Record<string, string>): string {
   const parts = [tags['addr:street'], tags['addr:housenumber'], tags['addr:suburb'] ?? tags['addr:city']].filter(Boolean)
   return parts.length ? parts.join(', ') : 'Endereço não informado no OpenStreetMap'
+}
+
+async function fetchWithTimeout(url: string, body: string, outerSignal: AbortSignal | undefined, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController()
+  const onAbort = () => controller.abort()
+  outerSignal?.addEventListener('abort', onAbort)
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timer)
+    outerSignal?.removeEventListener('abort', onAbort)
+  }
+}
+
+async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] }> {
+  const body = `data=${encodeURIComponent(query)}`
+  for (const endpoint of ENDPOINTS) {
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+    try {
+      const res = await fetchWithTimeout(endpoint, body, signal, 18000)
+      if (!res.ok) continue
+      const json = await res.json()
+      if (!Array.isArray(json.elements)) continue
+      return json
+    } catch {
+      // tenta o próximo espelho
+      continue
+    }
+  }
+  throw new Error(
+    'Não foi possível buscar estabelecimentos agora — os servidores públicos do OpenStreetMap podem estar sobrecarregados. Tente novamente em instantes.',
+  )
 }
 
 // Busca estabelecimentos reais próximos via Overpass API (OpenStreetMap), sem necessidade de chave.
@@ -47,17 +93,8 @@ export async function searchEstablishments(
   if (tags.length === 0) return []
 
   const query = buildQuery(tags, origin.lat, origin.lng, Math.round(radiusKm * 1000))
-
-  const res = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `data=${encodeURIComponent(query)}`,
-    signal,
-  })
-  if (!res.ok) throw new Error(`Busca falhou (status ${res.status}). Tente novamente em instantes.`)
-
-  const json = await res.json()
-  const elements: OverpassElement[] = json.elements ?? []
+  const json = await queryOverpass(query, signal)
+  const elements = json.elements ?? []
 
   const results: Establishment[] = []
   const seen = new Set<string>()
