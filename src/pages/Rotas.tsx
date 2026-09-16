@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
 import L from 'leaflet'
@@ -182,7 +182,7 @@ export default function Rotas() {
                     <Popup>{idx + 1}. {p.nome}</Popup>
                   </Marker>
                 ))}
-                <Polyline positions={polyline} pathOptions={{ color: '#E2963C', weight: 3, opacity: 0.75, dashArray: '6 6' }} />
+                <Polyline positions={polyline} pathOptions={{ color: '#3B82F6', weight: 3, opacity: 0.75, dashArray: '6 6' }} />
               </MapContainer>
             </div>
 
@@ -201,7 +201,7 @@ export default function Rotas() {
                                 className="flex items-center gap-2 rounded-[6px] border border-[#E4DCC8] bg-[#F3EEE3] px-3 py-2.5"
                               >
                                 <span {...dragProvided.dragHandleProps} className="text-[#A69E8E]"><GripVertical size={15} /></span>
-                                <span className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E2963C] text-[11px] font-bold text-[#2B2620]">{idx + 1}</span>
+                                <span className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3B82F6] text-[11px] font-bold text-[#2B2620]">{idx + 1}</span>
                                 <div className="min-w-0 flex-1">
                                   <div className="truncate text-[13px] text-[#2B2620]">{p.nome}</div>
                                   <div className="truncate text-[11px] text-[#8F8676]">{p.endereco}</div>
@@ -270,7 +270,7 @@ export default function Rotas() {
                   <div className="text-[10.5px] text-[#8F8676]">distância total</div>
                 </div>
                 <div className="rounded-[6px] border border-[#E4DCC8] bg-[#F3EEE3] py-3">
-                  <Clock size={15} className="mx-auto mb-1 text-[#E2963C]" />
+                  <Clock size={15} className="mx-auto mb-1 text-[#3B82F6]" />
                   <div className="text-[15px] font-semibold">{Math.round((r.tempoEstimadoMin / 60) * 10) / 10}h</div>
                   <div className="text-[10.5px] text-[#8F8676]">tempo estimado</div>
                 </div>
@@ -304,7 +304,7 @@ export default function Rotas() {
               </div>
               <div className="mt-1.5 flex items-center justify-between text-[14px]">
                 <span className="font-medium text-[#5A5346]">Custo estimado</span>
-                <span className="mono font-semibold text-[#E2963C]">{currency(r.combustivel.custoEstimado)}</span>
+                <span className="mono font-semibold text-[#3B82F6]">{currency(r.combustivel.custoEstimado)}</span>
               </div>
             </Card>
 
@@ -330,7 +330,7 @@ export default function Rotas() {
   if (draftStops.length === 0) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-20 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3EEE3] text-[#E2963C]">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3EEE3] text-[#3B82F6]">
           <RouteEmptyIcon size={28} />
         </div>
         <h1 className="text-[18px] font-bold">Seu roteiro está vazio</h1>
@@ -404,7 +404,7 @@ export default function Rotas() {
                     onClick={() => { toggleDraftStop(clientToStop(c)); setClientQuery('') }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] hover:bg-[#ECE3D2]"
                   >
-                    <Plus size={13} className="text-[#E2963C]" />
+                    <Plus size={13} className="text-[#3B82F6]" />
                     {c.nomeFantasia ?? c.razaoSocial}
                   </button>
                 ))}

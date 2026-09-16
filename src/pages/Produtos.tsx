@@ -65,9 +65,9 @@ export default function Produtos() {
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar produto ou SKU…" className="w-full bg-transparent text-[#2B2620] outline-none placeholder:text-[#8F8676]" />
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <button onClick={() => setIndustryFilter('todas')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${industryFilter === 'todas' ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#E4DCC8] text-[#8F8676]'}`}>Todas</button>
+          <button onClick={() => setIndustryFilter('todas')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${industryFilter === 'todas' ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]' : 'border-[#E4DCC8] text-[#8F8676]'}`}>Todas</button>
           {industries.map((ind) => (
-            <button key={ind.id} onClick={() => setIndustryFilter(ind.id)} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${industryFilter === ind.id ? 'text-[#E2963C]' : 'border-[#E4DCC8] text-[#8F8676]'}`} style={industryFilter === ind.id ? { borderColor: `${ind.cor}55`, background: `${ind.cor}1A`, color: ind.cor } : {}}>
+            <button key={ind.id} onClick={() => setIndustryFilter(ind.id)} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${industryFilter === ind.id ? 'text-[#3B82F6]' : 'border-[#E4DCC8] text-[#8F8676]'}`} style={industryFilter === ind.id ? { borderColor: `${ind.cor}55`, background: `${ind.cor}1A`, color: ind.cor } : {}}>
               {ind.nome}
             </button>
           ))}

@@ -15,7 +15,7 @@ export const STATUS_COLOR: Record<ClientStatus, string> = {
   ativo: '#3FA9A0',
   inativo: '#8F8676',
   perdido: '#D9695F',
-  potencial: '#E2963C',
+  potencial: '#3B82F6',
 }
 
 export const STAGE_LABEL: Record<OpportunityStage, string> = {
@@ -49,7 +49,7 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
   rascunho: '#8F8676',
   enviado: '#5B8DEF',
-  aprovado: '#E2963C',
+  aprovado: '#3B82F6',
   faturado: '#3FA9A0',
   cancelado: '#D9695F',
 }

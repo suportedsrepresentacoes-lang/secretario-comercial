@@ -78,20 +78,29 @@ async function fetchWithTimeout(url: string, body: string, outerSignal: AbortSig
 async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] }> {
   const body = `data=${encodeURIComponent(query)}`
   const order = [preferredEndpoint, ...ENDPOINTS.filter((e) => e !== preferredEndpoint)]
+  // Um espelho pode responder 200 com uma lista vazia mesmo quando existem resultados de verdade
+  // (limitação/instabilidade daquela instância específica) — isso não pode ser tratado como resposta
+  // final. Só aceitamos "zero resultados" se TODOS os espelhos concordarem; qualquer um que traga
+  // resultados de verdade vence e passa a ser preferido nas próximas buscas.
+  let emptyButValidFallback: { elements: OverpassElement[] } | null = null
   for (const endpoint of order) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     try {
-      const res = await fetchWithTimeout(endpoint, body, signal, 8000)
+      const res = await fetchWithTimeout(endpoint, body, signal, 5000)
       if (!res.ok) continue
       const json = await res.json()
       if (!Array.isArray(json.elements)) continue
-      preferredEndpoint = endpoint
-      return json
+      if (json.elements.length > 0) {
+        preferredEndpoint = endpoint
+        return json
+      }
+      emptyButValidFallback = json
     } catch {
       // tenta o próximo espelho
       continue
     }
   }
+  if (emptyButValidFallback) return emptyButValidFallback
   throw new Error(
     'Não foi possível buscar estabelecimentos agora — os servidores públicos do OpenStreetMap podem estar sobrecarregados. Tente novamente em instantes.',
   )

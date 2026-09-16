@@ -8,7 +8,7 @@ import { currency } from '../lib/date'
 import { orderTotal } from '../lib/calc'
 import type { Industry } from '../types'
 
-const COLOR_OPTIONS = ['#E2963C', '#3FA9A0', '#5B8DEF', '#9B7FE0', '#D9695F', '#4FC97A']
+const COLOR_OPTIONS = ['#3B82F6', '#3FA9A0', '#5B8DEF', '#9B7FE0', '#D9695F', '#4FC97A']
 
 function empty(): Omit<Industry, 'id'> {
   return { nome: '', cnpj: '', contatoNome: '', contatoTelefone: '', comissaoPadrao: 5, categorias: [], cor: COLOR_OPTIONS[0], condicaoPagamento: '', prazoEntregaDias: 10 }

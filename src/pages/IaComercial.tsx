@@ -42,7 +42,7 @@ export default function IaComercial() {
       <div className="flex-1 space-y-3 overflow-y-auto rounded-md border border-[#E4DCC8] bg-[#FFFFFF] p-4">
         {aiMessages.map((m) => (
           <div key={m.id} className={`flex ${m.autor === 'usuario' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] whitespace-pre-line rounded-[10px] px-3.5 py-2.5 text-[13px] ${m.autor === 'usuario' ? 'bg-[#E2963C]/15 text-[#2B2620]' : 'bg-[#ECE5D6] text-[#2B2620]'}`}>
+            <div className={`max-w-[80%] whitespace-pre-line rounded-[10px] px-3.5 py-2.5 text-[13px] ${m.autor === 'usuario' ? 'bg-[#3B82F6]/15 text-[#2B2620]' : 'bg-[#ECE5D6] text-[#2B2620]'}`}>
               {m.texto}
               <div className="mono mt-1.5 text-[10px] text-[#8F8676]">{formatTime(m.hora)}</div>
             </div>

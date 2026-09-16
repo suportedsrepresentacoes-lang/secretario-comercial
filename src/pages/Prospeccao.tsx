@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import L from 'leaflet'
@@ -32,7 +32,7 @@ const meIcon = L.divIcon({
   iconAnchor: [9, 9],
 })
 function resultIcon(active: boolean) {
-  const color = active ? '#3FA9A0' : '#E2963C'
+  const color = active ? '#3FA9A0' : '#3B82F6'
   return L.divIcon({
     className: '',
     html: `<div style="width:16px;height:16px;border-radius:9999px;background:${color};border:2px solid #FFFFFF"></div>`,
@@ -230,7 +230,7 @@ export default function Prospeccao() {
                   placeholder="Ou digite: endereço, bairro, cidade…"
                   className="w-full bg-transparent text-[#2B2620] outline-none placeholder:text-[#8F8676]"
                 />
-                <button onClick={handleAddressSearch} className="shrink-0 text-[11px] font-medium text-[#E2963C]">
+                <button onClick={handleAddressSearch} className="shrink-0 text-[11px] font-medium text-[#3B82F6]">
                   {addressSearching ? '...' : 'buscar'}
                 </button>
               </div>
@@ -278,7 +278,7 @@ export default function Prospeccao() {
                   <button
                     key={s.id}
                     onClick={() => toggleSegment(s)}
-                    className={`rounded-full border px-2.5 py-1 text-[11.5px] ${checked ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#E4DCC8] text-[#5A5346] hover:bg-[#F3EEE3]'}`}
+                    className={`rounded-full border px-2.5 py-1 text-[11.5px] ${checked ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]' : 'border-[#E4DCC8] text-[#5A5346] hover:bg-[#F3EEE3]'}`}
                   >
                     {s.label}
                   </button>
@@ -305,14 +305,14 @@ export default function Prospeccao() {
                 <button
                   key={r}
                   onClick={() => setRadiusKm(r)}
-                  className={`rounded-full border px-3 py-1 text-[12px] ${radiusKm === r ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#E4DCC8] text-[#8F8676]'}`}
+                  className={`rounded-full border px-3 py-1 text-[12px] ${radiusKm === r ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]' : 'border-[#E4DCC8] text-[#8F8676]'}`}
                 >
                   {r} km
                 </button>
               ))}
             </div>
             <label className="mt-3 flex items-start gap-2 rounded-[6px] border border-[#E4DCC8] bg-[#F3EEE3] px-3 py-2.5 text-[12px]">
-              <input type="checkbox" checked={autoExpand} onChange={(e) => setAutoExpand(e.target.checked)} className="mt-0.5 accent-[#E2963C]" />
+              <input type="checkbox" checked={autoExpand} onChange={(e) => setAutoExpand(e.target.checked)} className="mt-0.5 accent-[#3B82F6]" />
               <span>
                 <span className="font-medium text-[#2B2620]">Expandir busca automaticamente caso haja poucos resultados</span>
                 <span className="mt-0.5 block text-[11px] text-[#8F8676]">Amplia o raio (até 80 km) se houver menos de 3 estabelecimentos.</span>

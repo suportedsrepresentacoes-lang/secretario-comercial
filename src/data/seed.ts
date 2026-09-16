@@ -1,4 +1,4 @@
-import { newId } from '../lib/id'
+﻿import { newId } from '../lib/id'
 import { addDays } from '../lib/date'
 import type {
   Client, Industry, Product, Visit, Opportunity, Order, FollowUp, Conversation, Expense,
@@ -18,7 +18,7 @@ export const industries: Industry[] = [
     contatoTelefone: '(62) 3241-5566',
     comissaoPadrao: 6,
     categorias: ['Fechaduras', 'Dobradiças', 'Ferragens'],
-    cor: '#E2963C',
+    cor: '#3B82F6',
     condicaoPagamento: '30/60/90 dias',
     prazoEntregaDias: 12,
   },

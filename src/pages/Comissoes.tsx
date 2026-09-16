@@ -64,7 +64,7 @@ export default function Comissoes() {
                 contentStyle={{ background: '#F3EEE3', border: '1px solid #E4DCC8', borderRadius: 6, fontSize: 12 }}
                 formatter={(v) => currency(Number(v))}
               />
-              <Bar dataKey="v" fill="#E2963C" radius={[3, 3, 0, 0]} barSize={28} />
+              <Bar dataKey="v" fill="#3B82F6" radius={[3, 3, 0, 0]} barSize={28} />
             </BarChart>
           </ResponsiveContainer>
         </Card>

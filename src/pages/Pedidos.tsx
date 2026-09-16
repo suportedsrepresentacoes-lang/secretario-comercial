@@ -70,7 +70,7 @@ export default function Pedidos() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-1.5">
-        <button onClick={() => setStatusFilter('todos')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${statusFilter === 'todos' ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#E4DCC8] text-[#8F8676]'}`}>Todos</button>
+        <button onClick={() => setStatusFilter('todos')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${statusFilter === 'todos' ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]' : 'border-[#E4DCC8] text-[#8F8676]'}`}>Todos</button>
         {STATUSES.map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)} className="rounded-full border px-2.5 py-1 text-[11.5px]" style={statusFilter === s ? { borderColor: `${ORDER_STATUS_COLOR[s]}55`, background: `${ORDER_STATUS_COLOR[s]}1A`, color: ORDER_STATUS_COLOR[s] } : { borderColor: '#E4DCC8', color: '#8F8676' }}>
             {ORDER_STATUS_LABEL[s]}
@@ -101,7 +101,7 @@ export default function Pedidos() {
                 <span className="truncate text-[#5A5346]">{client?.nomeFantasia ?? client?.razaoSocial}</span>
                 <span className="truncate text-[11.5px]" style={{ color: ind?.cor }}>{ind?.nome}</span>
                 <span className="text-[#8F8676]">{formatDate(o.dataCriacao)}</span>
-                <span className="mono text-[#E2963C]">{currency(total)}</span>
+                <span className="mono text-[#3B82F6]">{currency(total)}</span>
                 <div className="flex items-center gap-2">
                   <Select
                     value={o.status}
@@ -125,7 +125,7 @@ export default function Pedidos() {
         title="Novo pedido"
         footer={
           <div className="flex items-center gap-3">
-            <div className="mr-auto text-[13px] text-[#8F8676]">Total: <span className="mono text-[#E2963C]">{currency(draftTotal)}</span></div>
+            <div className="mr-auto text-[13px] text-[#8F8676]">Total: <span className="mono text-[#3B82F6]">{currency(draftTotal)}</span></div>
             <Button variant="secondary" onClick={() => { setOpen(false); resetForm() }}>Cancelar</Button>
             <Button onClick={submit}>Criar pedido</Button>
           </div>
@@ -145,7 +145,7 @@ export default function Pedidos() {
 
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[12px] font-medium text-[#8F8676]">Itens do pedido</span>
-          <button onClick={addItem} className="flex items-center gap-1 text-[11.5px] text-[#E2963C]"><Plus size={13} /> Adicionar item</button>
+          <button onClick={addItem} className="flex items-center gap-1 text-[11.5px] text-[#3B82F6]"><Plus size={13} /> Adicionar item</button>
         </div>
         <div className="space-y-2">
           {items.map((it, idx) => (

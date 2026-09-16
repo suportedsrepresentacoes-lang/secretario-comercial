@@ -66,7 +66,7 @@ export default function Configuracoes() {
 
       <Card title="Aplicativo (PWA)">
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] bg-[#E2963C]/15 text-[#E2963C]"><Smartphone size={17} /></div>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] bg-[#3B82F6]/15 text-[#3B82F6]"><Smartphone size={17} /></div>
           <div className="text-[12.5px] text-[#8F8676]">
             Este sistema funciona como aplicativo instalável. No Chrome/Edge, use o ícone de instalação na barra de
             endereço; no celular, use "Adicionar à tela inicial" no menu do navegador. Depois de instalado, funciona

@@ -13,7 +13,7 @@ const STATUS_COLOR: Record<VisitStatus, string> = {
   agendada: '#5B8DEF',
   realizada: '#3FA9A0',
   cancelada: '#D9695F',
-  reagendada: '#E2963C',
+  reagendada: '#3B82F6',
 }
 
 function emptyNew(clientId: string): Omit<Visit, 'id' | 'criadoEm'> {
@@ -76,7 +76,7 @@ export default function Visitas() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-1.5">
-        <button onClick={() => setStatusFilter('todos')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${statusFilter === 'todos' ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#E4DCC8] text-[#8F8676]'}`}>Todas</button>
+        <button onClick={() => setStatusFilter('todos')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${statusFilter === 'todos' ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]' : 'border-[#E4DCC8] text-[#8F8676]'}`}>Todas</button>
         {(Object.keys(VISIT_STATUS_LABEL) as VisitStatus[]).map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)} className="rounded-full border px-2.5 py-1 text-[11.5px]" style={statusFilter === s ? { borderColor: `${STATUS_COLOR[s]}55`, background: `${STATUS_COLOR[s]}1A`, color: STATUS_COLOR[s] } : { borderColor: '#E4DCC8', color: '#8F8676' }}>
             {VISIT_STATUS_LABEL[s]}

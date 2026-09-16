@@ -136,7 +136,7 @@ export default function Clientes() {
               onClick={() => setStatusFilter(s)}
               className={`rounded-full border px-2.5 py-1 text-[11.5px] transition-colors ${
                 statusFilter === s
-                  ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]'
+                  ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]'
                   : 'border-[#E4DCC8] bg-[#F3EEE3] text-[#8F8676] hover:text-[#5A5346]'
               }`}
             >

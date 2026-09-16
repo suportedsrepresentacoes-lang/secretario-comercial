@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { Compass, Route, Bookmark, Users, Settings, ChevronDown, Route as LogoIcon } from 'lucide-react'
 import { useAppStore } from '../../store/useAppStore'
@@ -22,7 +22,7 @@ function TabLink({ to, label, icon: Icon, end }: { to: string; label: string; ic
       end={end}
       className={({ isActive }) =>
         `flex items-center gap-1.5 rounded-full px-4 py-2 text-[13.5px] font-medium transition-colors ${
-          isActive ? 'bg-[#E2963C] text-[#FFFFFF] shadow-sm' : 'text-[#5A5346] hover:bg-[#F3EEE3]'
+          isActive ? 'bg-[#3B82F6] text-[#FFFFFF] shadow-sm' : 'text-[#5A5346] hover:bg-[#F3EEE3]'
         }`
       }
     >
@@ -43,7 +43,7 @@ export default function TopNav() {
     <>
       <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-[#E4DCC8] bg-[#FFFFFF] px-4 py-3 sm:px-6">
         <button onClick={() => navigate('/')} className="flex shrink-0 items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-[#E2963C]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-[#3B82F6]">
             <LogoIcon size={18} className="text-[#FFFFFF]" strokeWidth={2.5} />
           </div>
           <div className="hidden leading-tight sm:block">
@@ -65,7 +65,7 @@ export default function TopNav() {
           >
             <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-[#3FA9A0] text-[11px] font-bold text-[#FFFFFF]">
               {initials(repName)}
-              {emAndamento && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#FFFFFF] bg-[#E2963C]" />}
+              {emAndamento && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#FFFFFF] bg-[#3B82F6]" />}
             </span>
             <ChevronDown size={14} className="hidden text-[#8F8676] sm:block" />
           </button>
@@ -103,7 +103,7 @@ export default function TopNav() {
             to={t.to}
             end={t.to === '/'}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${isActive ? 'text-[#E2963C]' : 'text-[#8F8676]'}`
+              `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${isActive ? 'text-[#3B82F6]' : 'text-[#8F8676]'}`
             }
           >
             <t.icon size={19} />

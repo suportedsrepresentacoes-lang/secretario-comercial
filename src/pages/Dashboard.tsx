@@ -125,7 +125,7 @@ export default function Dashboard() {
               <XAxis dataKey="m" stroke="#8F8676" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#8F8676" fontSize={12} tickLine={false} axisLine={false} width={28} />
               <Tooltip contentStyle={{ background: '#F3EEE3', border: '1px solid #E4DCC8', borderRadius: 6, fontSize: 12 }} />
-              <Line type="monotone" dataKey="v" stroke="#E2963C" strokeWidth={2.5} dot={{ r: 3, fill: '#E2963C' }} />
+              <Line type="monotone" dataKey="v" stroke="#3B82F6" strokeWidth={2.5} dot={{ r: 3, fill: '#3B82F6' }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
@@ -163,7 +163,7 @@ export default function Dashboard() {
                       <div className="truncate text-[13px]">{c ? (c.nomeFantasia ?? c.razaoSocial) : 'Cliente'}</div>
                       <div className="mt-0.5 truncate text-[11.5px] text-[#8F8676]">{f.contexto}</div>
                     </div>
-                    <span className="mono shrink-0 pl-3 text-[11.5px] text-[#E2963C]">{formatRelativeDay(f.dataAgendada)}</span>
+                    <span className="mono shrink-0 pl-3 text-[11.5px] text-[#3B82F6]">{formatRelativeDay(f.dataAgendada)}</span>
                   </div>
                 )
               })}

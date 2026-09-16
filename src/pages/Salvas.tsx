@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, Fuel, Gauge, MapPin, CheckCircle2, Play, Bookmark, Compass } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
@@ -38,7 +38,7 @@ export default function Salvas() {
   if (nothingAtAll) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-20 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3EEE3] text-[#E2963C]">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3EEE3] text-[#3B82F6]">
           <Bookmark size={28} />
         </div>
         <h1 className="text-[18px] font-bold">Nenhum roteiro salvo</h1>
@@ -89,7 +89,7 @@ export default function Salvas() {
                   <div className="text-[13px] text-[#2B2620]">{r.nome}</div>
                   <div className="text-[11px] text-[#8F8676]">{r.paradas.length} paradas · {r.distanciaTotalKm} km</div>
                 </div>
-                <span className="mono text-[11.5px] text-[#E2963C]">{currency(r.combustivel.custoEstimado)}</span>
+                <span className="mono text-[11.5px] text-[#3B82F6]">{currency(r.combustivel.custoEstimado)}</span>
               </button>
             ))}
           </div>
@@ -103,7 +103,7 @@ export default function Salvas() {
               <button
                 key={v}
                 onClick={() => setPeriod(v)}
-                className={`rounded-full border px-3 py-1 text-[12px] ${period === v ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#E4DCC8] text-[#8F8676]'}`}
+                className={`rounded-full border px-3 py-1 text-[12px] ${period === v ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]' : 'border-[#E4DCC8] text-[#8F8676]'}`}
               >
                 {l}
               </button>
@@ -143,7 +143,7 @@ export default function Salvas() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="mono flex items-center gap-1 text-[12.5px] text-[#E2963C]"><Fuel size={12} /> {currency(r.combustivel.custoEstimado)}</span>
+                        <span className="mono flex items-center gap-1 text-[12.5px] text-[#3B82F6]"><Fuel size={12} /> {currency(r.combustivel.custoEstimado)}</span>
                         <ChevronRight size={15} className="text-[#8F8676]" />
                       </div>
                     </button>

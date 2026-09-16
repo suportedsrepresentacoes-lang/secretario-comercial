@@ -10,6 +10,7 @@ export const SEGMENTS: Segment[] = [
     osmTags: [
       { key: 'shop', value: 'doityourself' },
       { key: 'shop', value: 'trade' },
+      { key: 'shop', value: 'hardware' },
     ],
   },
   {

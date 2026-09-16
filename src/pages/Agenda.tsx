@@ -64,11 +64,11 @@ export default function Agenda() {
               key={idx}
               onClick={() => setSelectedDay(idx)}
               className={`flex flex-col items-center gap-1 rounded-[8px] border py-3 transition-colors ${
-                selectedDay === idx ? 'border-[#E2963C]/50 bg-[#E2963C]/10' : 'border-[#E4DCC8] bg-[#F3EEE3] hover:bg-[#ECE3D2]'
+                selectedDay === idx ? 'border-[#3B82F6]/50 bg-[#3B82F6]/10' : 'border-[#E4DCC8] bg-[#F3EEE3] hover:bg-[#ECE3D2]'
               }`}
             >
               <span className="text-[10.5px] uppercase text-[#8F8676]">{isToday ? 'hoje' : WEEKDAY_SHORT[d.getDay()]}</span>
-              <span className={`text-[16px] font-semibold ${selectedDay === idx ? 'text-[#E2963C]' : 'text-[#2B2620]'}`}>{d.getDate()}</span>
+              <span className={`text-[16px] font-semibold ${selectedDay === idx ? 'text-[#3B82F6]' : 'text-[#2B2620]'}`}>{d.getDate()}</span>
               {count > 0 && <span className="mono text-[10px] text-[#3FA9A0]">{count}</span>}
             </button>
           )
@@ -85,7 +85,7 @@ export default function Agenda() {
             <Card key={v.id} className="!p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex gap-3">
-                  <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-[6px] bg-[#ECE5D6] text-[#E2963C]">
+                  <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-[6px] bg-[#ECE5D6] text-[#3B82F6]">
                     <Clock size={14} />
                     <span className="mono text-[10px]">{formatTime(v.dataHora)}</span>
                   </div>

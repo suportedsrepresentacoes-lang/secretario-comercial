@@ -30,7 +30,7 @@ export default function Mapa() {
 
   const homeIcon = useMemo(() => L.divIcon({
     className: '',
-    html: `<div style="width:20px;height:20px;border-radius:6px;background:#E2963C;border:2px solid #2B2620;display:flex;align-items:center;justify-content:center;color:#2B2620;font-weight:800;font-size:10px">DS</div>`,
+    html: `<div style="width:20px;height:20px;border-radius:6px;background:#3B82F6;border:2px solid #2B2620;display:flex;align-items:center;justify-content:center;color:#2B2620;font-weight:800;font-size:10px">DS</div>`,
     iconSize: [20, 20],
     iconAnchor: [10, 10],
   }), [])
@@ -51,7 +51,7 @@ export default function Mapa() {
               style={
                 statusFilter === s
                   ? s === 'todos'
-                    ? { borderColor: '#E2963C55', background: '#E2963C1A', color: '#E2963C' }
+                    ? { borderColor: '#3B82F655', background: '#3B82F61A', color: '#3B82F6' }
                     : { borderColor: `${STATUS_COLOR[s]}55`, background: `${STATUS_COLOR[s]}1A`, color: STATUS_COLOR[s] }
                   : { borderColor: '#E4DCC8', color: '#8F8676' }
               }
@@ -86,7 +86,7 @@ export default function Mapa() {
                     <div style={{ fontSize: 12, marginBottom: 8 }}>{orderCount} pedido(s) no histórico</div>
                     <button
                       onClick={() => navigate(`/clientes?id=${c.id}`)}
-                      style={{ background: '#E2963C', color: '#2B2620', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}
+                      style={{ background: '#3B82F6', color: '#2B2620', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}
                     >
                       Ver cliente
                     </button>

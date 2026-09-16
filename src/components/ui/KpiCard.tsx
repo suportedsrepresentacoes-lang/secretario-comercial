@@ -13,7 +13,7 @@
 }) {
   const toneMap = {
     default: 'text-[#2B2620]',
-    accent: 'text-[#E2963C]',
+    accent: 'text-[#3B82F6]',
     teal: 'text-[#3FA9A0]',
     danger: 'text-[#D9695F]',
   }

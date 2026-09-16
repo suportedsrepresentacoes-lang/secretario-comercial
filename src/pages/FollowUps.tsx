@@ -145,7 +145,7 @@ export default function FollowUps() {
       )}
 
       <Section title="Atrasados" items={atrasados} tone="#D9695F" />
-      <Section title="Hoje" items={hoje} tone="#E2963C" />
+      <Section title="Hoje" items={hoje} tone="#3B82F6" />
       <Section title="Próximos" items={proximos} tone="#5B8DEF" />
 
       {concluidos.length > 0 && (

@@ -91,10 +91,10 @@ export default function Relatorios() {
             <div key={client.id}>
               <div className="mb-1 flex items-center justify-between text-[12.5px]">
                 <span className="text-[#5A5346]">{client.nomeFantasia ?? client.razaoSocial}</span>
-                <span className="mono text-[#E2963C]">{currency(valor)}</span>
+                <span className="mono text-[#3B82F6]">{currency(valor)}</span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-[#ECE5D6]">
-                <div className="h-full rounded-full bg-[#E2963C]" style={{ width: `${(valor / topClients[0].valor) * 100}%` }} />
+                <div className="h-full rounded-full bg-[#3B82F6]" style={{ width: `${(valor / topClients[0].valor) * 100}%` }} />
               </div>
             </div>
           ))}

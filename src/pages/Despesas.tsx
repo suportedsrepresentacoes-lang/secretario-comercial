@@ -12,7 +12,7 @@ import { EXPENSE_CATEGORY_LABEL } from '../lib/ui'
 import type { Expense, ExpenseCategory } from '../types'
 
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
-  combustivel: '#E2963C',
+  combustivel: '#3B82F6',
   alimentacao: '#3FA9A0',
   hospedagem: '#5B8DEF',
   manutencao: '#9B7FE0',
