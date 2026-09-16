@@ -1,4 +1,4 @@
-import type { ClientStatus, OpportunityStage, OrderStatus, VisitStatus, FollowUpStatus, ExpenseCategory, StopStatus } from '../types'
+﻿import type { ClientStatus, OpportunityStage, OrderStatus, VisitStatus, FollowUpStatus, ExpenseCategory, StopStatus } from '../types'
 
 export const STATUS_LABEL: Record<ClientStatus, string> = {
   lead: 'Lead',
@@ -13,7 +13,7 @@ export const STATUS_COLOR: Record<ClientStatus, string> = {
   lead: '#9B7FE0',
   novo: '#5B8DEF',
   ativo: '#3FA9A0',
-  inativo: '#8D95A3',
+  inativo: '#8F8676',
   perdido: '#D9695F',
   potencial: '#E2963C',
 }
@@ -47,7 +47,7 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 }
 
 export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
-  rascunho: '#8D95A3',
+  rascunho: '#8F8676',
   enviado: '#5B8DEF',
   aprovado: '#E2963C',
   faturado: '#3FA9A0',

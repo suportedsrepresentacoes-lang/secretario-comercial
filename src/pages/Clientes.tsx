@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, Search, MapPin, Pencil, Trash2, Route as RouteIcon, Check } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
@@ -112,7 +112,7 @@ export default function Clientes() {
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[20px] font-bold">Clientes</h1>
-          <p className="mt-1 text-[13px] text-[#8D95A3]">{clients.length} clientes e prospects cadastrados</p>
+          <p className="mt-1 text-[13px] text-[#8F8676]">{clients.length} clientes e prospects cadastrados</p>
         </div>
         <Button onClick={openNewForm}>
           <Plus size={15} /> Novo cliente
@@ -120,13 +120,13 @@ export default function Clientes() {
       </div>
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2 rounded-[6px] border border-[#2A313D] bg-[#171C24] px-3 py-2 text-[13px] text-[#8D95A3] sm:max-w-[320px] sm:flex-1">
+        <div className="flex items-center gap-2 rounded-[6px] border border-[#E4DCC8] bg-[#F3EEE3] px-3 py-2 text-[13px] text-[#8F8676] sm:max-w-[320px] sm:flex-1">
           <Search size={15} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nome, CNPJ, cidade…"
-            className="w-full bg-transparent text-[#F2F0EA] outline-none placeholder:text-[#8D95A3]"
+            className="w-full bg-transparent text-[#2B2620] outline-none placeholder:text-[#8F8676]"
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -137,7 +137,7 @@ export default function Clientes() {
               className={`rounded-full border px-2.5 py-1 text-[11.5px] transition-colors ${
                 statusFilter === s
                   ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]'
-                  : 'border-[#2A313D] bg-[#171C24] text-[#8D95A3] hover:text-[#C7CCD6]'
+                  : 'border-[#E4DCC8] bg-[#F3EEE3] text-[#8F8676] hover:text-[#5A5346]'
               }`}
             >
               {s === 'todos' ? 'Todos' : STATUS_LABEL[s]}
@@ -147,7 +147,7 @@ export default function Clientes() {
       </div>
 
       <Card className="!p-0 overflow-hidden">
-        <div className="hidden grid-cols-[2fr_1.1fr_1fr_0.8fr_0.9fr_100px] gap-3 border-b border-[#2A313D] px-5 py-3 text-[11.5px] font-medium text-[#8D95A3] md:grid">
+        <div className="hidden grid-cols-[2fr_1.1fr_1fr_0.8fr_0.9fr_100px] gap-3 border-b border-[#E4DCC8] px-5 py-3 text-[11.5px] font-medium text-[#8F8676] md:grid">
           <span>Cliente</span>
           <span>Segmento</span>
           <span>Cidade</span>
@@ -155,7 +155,7 @@ export default function Clientes() {
           <span>Última visita</span>
           <span />
         </div>
-        <div className="divide-y divide-[#212833]">
+        <div className="divide-y divide-[#ECE5D6]">
           {filtered.map((c) => {
             const inDraft = draftStops.some((p) => p.id === c.id)
             return (
@@ -164,21 +164,21 @@ export default function Clientes() {
                 className="grid grid-cols-2 gap-2 px-5 py-3.5 text-[13px] md:grid-cols-[2fr_1.1fr_1fr_0.8fr_0.9fr_100px] md:items-center md:gap-3"
               >
                 <button onClick={() => openDetail(c.id)} className="col-span-2 flex items-center gap-3 text-left md:col-span-1">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2A313D] text-[11px] font-bold">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E4DCC8] text-[11px] font-bold">
                     {initials(c.nomeFantasia ?? c.razaoSocial)}
                   </div>
                   <div className="min-w-0">
-                    <div className="truncate font-medium text-[#F2F0EA]">{c.nomeFantasia ?? c.razaoSocial}</div>
-                    <div className="truncate text-[11.5px] text-[#8D95A3]">{c.cnpj || 'sem CNPJ'}</div>
+                    <div className="truncate font-medium text-[#2B2620]">{c.nomeFantasia ?? c.razaoSocial}</div>
+                    <div className="truncate text-[11.5px] text-[#8F8676]">{c.cnpj || 'sem CNPJ'}</div>
                   </div>
                 </button>
-                <span className="truncate text-[#C7CCD6]">{c.segmento}</span>
-                <span className="truncate text-[#C7CCD6]">{c.endereco.cidade}/{c.endereco.uf}</span>
+                <span className="truncate text-[#5A5346]">{c.segmento}</span>
+                <span className="truncate text-[#5A5346]">{c.endereco.cidade}/{c.endereco.uf}</span>
                 <span><StatusBadge status={c.status} /></span>
-                <span className="mono text-[#8D95A3]">{c.ultimaVisitaEm ? `${daysAgo(c.ultimaVisitaEm)}d atrás` : '—'}</span>
+                <span className="mono text-[#8F8676]">{c.ultimaVisitaEm ? `${daysAgo(c.ultimaVisitaEm)}d atrás` : '—'}</span>
                 <button
                   onClick={() => addToRoute(c)}
-                  className={`flex items-center justify-center gap-1 rounded-full border px-2 py-1 text-[11px] ${inDraft ? 'border-[#3FA9A0]/50 bg-[#3FA9A0]/15 text-[#3FA9A0]' : 'border-[#2A313D] text-[#8D95A3] hover:text-[#C7CCD6]'}`}
+                  className={`flex items-center justify-center gap-1 rounded-full border px-2 py-1 text-[11px] ${inDraft ? 'border-[#3FA9A0]/50 bg-[#3FA9A0]/15 text-[#3FA9A0]' : 'border-[#E4DCC8] text-[#8F8676] hover:text-[#5A5346]'}`}
                 >
                   {inDraft ? <Check size={12} /> : <RouteIcon size={12} />} {inDraft ? 'Na rota' : 'Add à rota'}
                 </button>
@@ -186,7 +186,7 @@ export default function Clientes() {
             )
           })}
           {filtered.length === 0 && (
-            <div className="px-5 py-10 text-center text-[13px] text-[#8D95A3]">Nenhum cliente encontrado.</div>
+            <div className="px-5 py-10 text-center text-[13px] text-[#8F8676]">Nenhum cliente encontrado.</div>
           )}
         </div>
       </Card>
@@ -209,11 +209,11 @@ export default function Clientes() {
 
             <div>
               <div className="text-[15px] font-semibold">{detailClient.razaoSocial}</div>
-              <div className="text-[12.5px] text-[#8D95A3]">{detailClient.cnpj || 'CNPJ não informado'} · {detailClient.segmento}</div>
+              <div className="text-[12.5px] text-[#8F8676]">{detailClient.cnpj || 'CNPJ não informado'} · {detailClient.segmento}</div>
             </div>
 
-            <div className="flex items-start gap-2 text-[13px] text-[#C7CCD6]">
-              <MapPin size={15} className="mt-0.5 shrink-0 text-[#8D95A3]" />
+            <div className="flex items-start gap-2 text-[13px] text-[#5A5346]">
+              <MapPin size={15} className="mt-0.5 shrink-0 text-[#8F8676]" />
               <span>
                 {detailClient.endereco.logradouro}{detailClient.endereco.numero ? `, ${detailClient.endereco.numero}` : ''}
                 {detailClient.endereco.bairro ? ` — ${detailClient.endereco.bairro}` : ''}, {detailClient.endereco.cidade}/{detailClient.endereco.uf}
@@ -221,38 +221,38 @@ export default function Clientes() {
             </div>
 
             <div>
-              <div className="mb-2 text-[12px] font-medium text-[#8D95A3]">Contatos</div>
+              <div className="mb-2 text-[12px] font-medium text-[#8F8676]">Contatos</div>
               <div className="space-y-2">
                 {detailClient.contatos.filter((ct) => ct.nome).map((ct) => (
-                  <div key={ct.id} className="rounded-[6px] border border-[#2A313D] bg-[#171C24] px-3 py-2 text-[13px]">
-                    <div className="font-medium">{ct.nome} {ct.cargo && <span className="text-[#8D95A3]">— {ct.cargo}</span>}</div>
-                    <div className="text-[11.5px] text-[#8D95A3]">{ct.telefone}{ct.email ? ` · ${ct.email}` : ''}</div>
+                  <div key={ct.id} className="rounded-[6px] border border-[#E4DCC8] bg-[#F3EEE3] px-3 py-2 text-[13px]">
+                    <div className="font-medium">{ct.nome} {ct.cargo && <span className="text-[#8F8676]">— {ct.cargo}</span>}</div>
+                    <div className="text-[11.5px] text-[#8F8676]">{ct.telefone}{ct.email ? ` · ${ct.email}` : ''}</div>
                   </div>
                 ))}
                 {detailClient.contatos.filter((ct) => ct.nome).length === 0 && (
-                  <span className="text-[12.5px] text-[#8D95A3]">Nenhum contato cadastrado.</span>
+                  <span className="text-[12.5px] text-[#8F8676]">Nenhum contato cadastrado.</span>
                 )}
               </div>
             </div>
 
             {detailClient.observacoes && (
               <div>
-                <div className="mb-1 text-[12px] font-medium text-[#8D95A3]">Observações</div>
-                <p className="text-[13px] text-[#C7CCD6]">{detailClient.observacoes}</p>
+                <div className="mb-1 text-[12px] font-medium text-[#8F8676]">Observações</div>
+                <p className="text-[13px] text-[#5A5346]">{detailClient.observacoes}</p>
               </div>
             )}
 
             <div>
-              <div className="mb-2 text-[12px] font-medium text-[#8D95A3]">Histórico de visitas</div>
+              <div className="mb-2 text-[12px] font-medium text-[#8F8676]">Histórico de visitas</div>
               <div className="space-y-1.5">
-                {clientVisits.length === 0 && <span className="text-[12.5px] text-[#8D95A3]">Nenhuma visita registrada ainda.</span>}
+                {clientVisits.length === 0 && <span className="text-[12.5px] text-[#8F8676]">Nenhuma visita registrada ainda.</span>}
                 {clientVisits.map((v, idx) => (
-                  <div key={idx} className="rounded-[6px] border border-[#2A313D] bg-[#171C24] px-3 py-2 text-[12.5px]">
+                  <div key={idx} className="rounded-[6px] border border-[#E4DCC8] bg-[#F3EEE3] px-3 py-2 text-[12.5px]">
                     <div className="flex items-center justify-between">
-                      <span className="text-[#C7CCD6]">{v.rota} — {formatDate(v.data)}</span>
+                      <span className="text-[#5A5346]">{v.rota} — {formatDate(v.data)}</span>
                       <span className={v.status === 'visitado' ? 'text-[#3FA9A0]' : 'text-[#D9695F]'}>{STOP_STATUS_LABEL[v.status as 'visitado' | 'nao_visitado']}</span>
                     </div>
-                    {v.observacao && <div className="mt-1 text-[#8D95A3]">{v.observacao}</div>}
+                    {v.observacao && <div className="mt-1 text-[#8F8676]">{v.observacao}</div>}
                   </div>
                 ))}
               </div>
@@ -306,7 +306,7 @@ export default function Clientes() {
           </Select>
         </Field>
 
-        <div className="mb-1.5 mt-2 text-[12px] font-medium text-[#8D95A3]">Endereço</div>
+        <div className="mb-1.5 mt-2 text-[12px] font-medium text-[#8F8676]">Endereço</div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Logradouro">
             <Input value={form.endereco.logradouro} onChange={(e) => setForm({ ...form, endereco: { ...form.endereco, logradouro: e.target.value } })} />
@@ -324,7 +324,7 @@ export default function Clientes() {
           </Field>
         </div>
 
-        <div className="mb-1.5 mt-2 text-[12px] font-medium text-[#8D95A3]">Contato</div>
+        <div className="mb-1.5 mt-2 text-[12px] font-medium text-[#8F8676]">Contato</div>
         <Field label="Nome">
           <Input
             value={form.contatos[0]?.nome ?? ''}

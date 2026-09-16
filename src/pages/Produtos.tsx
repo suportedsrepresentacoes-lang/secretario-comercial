@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { Plus, Search, Pencil, Trash2, Package } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import Card from '../components/ui/Card'
@@ -54,20 +54,20 @@ export default function Produtos() {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-[20px] font-bold">Produtos</h1>
-          <p className="mt-1 text-[13px] text-[#8D95A3]">{products.length} itens no catálogo</p>
+          <p className="mt-1 text-[13px] text-[#8F8676]">{products.length} itens no catálogo</p>
         </div>
         <Button onClick={openNew}><Plus size={15} /> Novo produto</Button>
       </div>
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2 rounded-[6px] border border-[#2A313D] bg-[#171C24] px-3 py-2 text-[13px] text-[#8D95A3] sm:max-w-[300px] sm:flex-1">
+        <div className="flex items-center gap-2 rounded-[6px] border border-[#E4DCC8] bg-[#F3EEE3] px-3 py-2 text-[13px] text-[#8F8676] sm:max-w-[300px] sm:flex-1">
           <Search size={15} />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar produto ou SKU…" className="w-full bg-transparent text-[#F2F0EA] outline-none placeholder:text-[#8D95A3]" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar produto ou SKU…" className="w-full bg-transparent text-[#2B2620] outline-none placeholder:text-[#8F8676]" />
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <button onClick={() => setIndustryFilter('todas')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${industryFilter === 'todas' ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#2A313D] text-[#8D95A3]'}`}>Todas</button>
+          <button onClick={() => setIndustryFilter('todas')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${industryFilter === 'todas' ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#E4DCC8] text-[#8F8676]'}`}>Todas</button>
           {industries.map((ind) => (
-            <button key={ind.id} onClick={() => setIndustryFilter(ind.id)} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${industryFilter === ind.id ? 'text-[#E2963C]' : 'border-[#2A313D] text-[#8D95A3]'}`} style={industryFilter === ind.id ? { borderColor: `${ind.cor}55`, background: `${ind.cor}1A`, color: ind.cor } : {}}>
+            <button key={ind.id} onClick={() => setIndustryFilter(ind.id)} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${industryFilter === ind.id ? 'text-[#E2963C]' : 'border-[#E4DCC8] text-[#8F8676]'}`} style={industryFilter === ind.id ? { borderColor: `${ind.cor}55`, background: `${ind.cor}1A`, color: ind.cor } : {}}>
               {ind.nome}
             </button>
           ))}
@@ -75,7 +75,7 @@ export default function Produtos() {
       </div>
 
       <Card className="!p-0 overflow-hidden">
-        <div className="hidden grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_60px] gap-3 border-b border-[#2A313D] px-5 py-3 text-[11.5px] font-medium text-[#8D95A3] md:grid">
+        <div className="hidden grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_60px] gap-3 border-b border-[#E4DCC8] px-5 py-3 text-[11.5px] font-medium text-[#8F8676] md:grid">
           <span>Produto</span>
           <span>Indústria</span>
           <span>Categoria</span>
@@ -83,30 +83,30 @@ export default function Produtos() {
           <span>Comissão</span>
           <span />
         </div>
-        <div className="divide-y divide-[#212833]">
+        <div className="divide-y divide-[#ECE5D6]">
           {filtered.map((p) => {
             const ind = industryOf(p.industriaId)
             return (
               <div key={p.id} className="grid grid-cols-2 gap-2 px-5 py-3.5 text-[13px] md:grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_60px] md:items-center md:gap-3">
                 <div className="col-span-2 flex items-center gap-3 md:col-span-1">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#212833] text-[#8D95A3]"><Package size={15} /></div>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#ECE5D6] text-[#8F8676]"><Package size={15} /></div>
                   <div className="min-w-0">
-                    <div className="truncate font-medium text-[#F2F0EA]">{p.nome}</div>
-                    <div className="mono truncate text-[11.5px] text-[#8D95A3]">{p.sku}</div>
+                    <div className="truncate font-medium text-[#2B2620]">{p.nome}</div>
+                    <div className="mono truncate text-[11.5px] text-[#8F8676]">{p.sku}</div>
                   </div>
                 </div>
                 <span className="truncate text-[11.5px]" style={{ color: ind?.cor }}>{ind?.nome}</span>
-                <span className="truncate text-[#C7CCD6]">{p.categoria}</span>
-                <span className="mono text-[#C7CCD6]">{currency(p.precoTabela)}/{p.unidade}</span>
+                <span className="truncate text-[#5A5346]">{p.categoria}</span>
+                <span className="mono text-[#5A5346]">{currency(p.precoTabela)}/{p.unidade}</span>
                 <span className="mono text-[#3FA9A0]">{p.comissaoPercentual ?? ind?.comissaoPadrao ?? 0}%</span>
                 <div className="flex gap-1 justify-end md:justify-start">
-                  <button onClick={() => openEdit(p)} className="rounded-[6px] p-1.5 text-[#8D95A3] hover:bg-[#171C24] hover:text-[#F2F0EA]"><Pencil size={13} /></button>
-                  <button onClick={() => confirm('Remover produto?') && deleteProduct(p.id)} className="rounded-[6px] p-1.5 text-[#8D95A3] hover:bg-[#D9695F]/10 hover:text-[#D9695F]"><Trash2 size={13} /></button>
+                  <button onClick={() => openEdit(p)} className="rounded-[6px] p-1.5 text-[#8F8676] hover:bg-[#F3EEE3] hover:text-[#2B2620]"><Pencil size={13} /></button>
+                  <button onClick={() => confirm('Remover produto?') && deleteProduct(p.id)} className="rounded-[6px] p-1.5 text-[#8F8676] hover:bg-[#D9695F]/10 hover:text-[#D9695F]"><Trash2 size={13} /></button>
                 </div>
               </div>
             )
           })}
-          {filtered.length === 0 && <div className="px-5 py-10 text-center text-[13px] text-[#8D95A3]">Nenhum produto encontrado.</div>}
+          {filtered.length === 0 && <div className="px-5 py-10 text-center text-[13px] text-[#8F8676]">Nenhum produto encontrado.</div>}
         </div>
       </Card>
 

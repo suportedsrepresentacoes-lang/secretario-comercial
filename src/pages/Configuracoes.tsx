@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Download, RotateCcw, Smartphone, Fuel } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import Card from '../components/ui/Card'
@@ -27,15 +27,15 @@ export default function Configuracoes() {
     <div className="max-w-2xl space-y-5">
       <div>
         <h1 className="text-[20px] font-bold">Configurações</h1>
-        <p className="mt-1 text-[13px] text-[#8D95A3]">Perfil, combustível e preferências do sistema</p>
+        <p className="mt-1 text-[13px] text-[#8F8676]">Perfil, combustível e preferências do sistema</p>
       </div>
 
       <Card title="Perfil">
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#3FA9A0] text-[14px] font-bold text-[#0F1218]">{initials(repName)}</div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#3FA9A0] text-[14px] font-bold text-[#2B2620]">{initials(repName)}</div>
           <div>
             <div className="text-[14px] font-semibold">{repName}</div>
-            <div className="text-[12px] text-[#8D95A3]">{companyName}</div>
+            <div className="text-[12px] text-[#8F8676]">{companyName}</div>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -49,8 +49,8 @@ export default function Configuracoes() {
         <Button onClick={saveProfile}>Salvar perfil</Button>
       </Card>
 
-      <Card title={<span className="flex items-center gap-1.5 text-[13px] font-medium text-[#C7CCD6]"><Fuel size={14} /> Combustível padrão</span>}>
-        <p className="mb-3 text-[12.5px] text-[#8D95A3]">
+      <Card title={<span className="flex items-center gap-1.5 text-[13px] font-medium text-[#5A5346]"><Fuel size={14} /> Combustível padrão</span>}>
+        <p className="mb-3 text-[12.5px] text-[#8F8676]">
           Usado como ponto de partida ao criar uma nova rota. Cada rota permite ajustar esses valores individualmente.
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -67,7 +67,7 @@ export default function Configuracoes() {
       <Card title="Aplicativo (PWA)">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] bg-[#E2963C]/15 text-[#E2963C]"><Smartphone size={17} /></div>
-          <div className="text-[12.5px] text-[#8D95A3]">
+          <div className="text-[12.5px] text-[#8F8676]">
             Este sistema funciona como aplicativo instalável. No Chrome/Edge, use o ícone de instalação na barra de
             endereço; no celular, use "Adicionar à tela inicial" no menu do navegador. Depois de instalado, funciona
             offline para as telas já visitadas.

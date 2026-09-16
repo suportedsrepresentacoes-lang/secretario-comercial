@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -81,16 +81,16 @@ export default function Dashboard() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-[20px] font-bold sm:text-[22px]">Bom dia, {firstName}</h1>
-          <p className="mt-1 text-[13px] text-[#8D95A3]">
+          <p className="mt-1 text-[13px] text-[#8F8676]">
             {formatLongDate(now)} — {visitsToday} visita{visitsToday === 1 ? '' : 's'} na agenda de hoje
           </p>
         </div>
-        <div className="flex gap-1.5 self-start rounded-[6px] border border-[#2A313D] bg-[#171C24] p-1 text-[12px] text-[#8D95A3]">
+        <div className="flex gap-1.5 self-start rounded-[6px] border border-[#E4DCC8] bg-[#F3EEE3] p-1 text-[12px] text-[#8F8676]">
           {(['Dia', 'Semana', 'Mês'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setRange(t)}
-              className={`rounded-[4px] px-3 py-1.5 ${t === range ? 'bg-[#212833] text-[#F2F0EA]' : ''}`}
+              className={`rounded-[4px] px-3 py-1.5 ${t === range ? 'bg-[#ECE5D6] text-[#2B2620]' : ''}`}
             >
               {t}
             </button>
@@ -116,15 +116,15 @@ export default function Dashboard() {
       <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card
           className="lg:col-span-2"
-          title={<span className="text-[13px] font-medium text-[#C7CCD6]">Evolução de vendas</span>}
-          action={<span className="mono text-[11px] text-[#8D95A3]">R$ mil / mês</span>}
+          title={<span className="text-[13px] font-medium text-[#5A5346]">Evolução de vendas</span>}
+          action={<span className="mono text-[11px] text-[#8F8676]">R$ mil / mês</span>}
         >
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={salesTrend}>
-              <CartesianGrid stroke="#212833" vertical={false} />
-              <XAxis dataKey="m" stroke="#8D95A3" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#8D95A3" fontSize={12} tickLine={false} axisLine={false} width={28} />
-              <Tooltip contentStyle={{ background: '#171C24', border: '1px solid #2A313D', borderRadius: 6, fontSize: 12 }} />
+              <CartesianGrid stroke="#ECE5D6" vertical={false} />
+              <XAxis dataKey="m" stroke="#8F8676" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#8F8676" fontSize={12} tickLine={false} axisLine={false} width={28} />
+              <Tooltip contentStyle={{ background: '#F3EEE3', border: '1px solid #E4DCC8', borderRadius: 6, fontSize: 12 }} />
               <Line type="monotone" dataKey="v" stroke="#E2963C" strokeWidth={2.5} dot={{ r: 3, fill: '#E2963C' }} />
             </LineChart>
           </ResponsiveContainer>
@@ -134,8 +134,8 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={funnel} layout="vertical" margin={{ left: 0 }}>
               <XAxis type="number" hide />
-              <YAxis dataKey="stage" type="category" stroke="#8D95A3" fontSize={11} tickLine={false} axisLine={false} width={72} />
-              <Tooltip contentStyle={{ background: '#171C24', border: '1px solid #2A313D', borderRadius: 6, fontSize: 12 }} />
+              <YAxis dataKey="stage" type="category" stroke="#8F8676" fontSize={11} tickLine={false} axisLine={false} width={72} />
+              <Tooltip contentStyle={{ background: '#F3EEE3', border: '1px solid #E4DCC8', borderRadius: 6, fontSize: 12 }} />
               <Bar dataKey="n" fill="#3FA9A0" radius={[0, 3, 3, 0]} barSize={12} />
             </BarChart>
           </ResponsiveContainer>
@@ -147,21 +147,21 @@ export default function Dashboard() {
           title="Follow-ups de hoje"
           action={
             <button onClick={() => navigate('/follow-ups')}>
-              <ChevronRight size={15} className="text-[#8D95A3]" />
+              <ChevronRight size={15} className="text-[#8F8676]" />
             </button>
           }
         >
           {followUpsToday.length === 0 ? (
-            <p className="py-2 text-[13px] text-[#8D95A3]">Nenhum follow-up pendente. 🎉</p>
+            <p className="py-2 text-[13px] text-[#8F8676]">Nenhum follow-up pendente. 🎉</p>
           ) : (
-            <div className="divide-y divide-[#212833]">
+            <div className="divide-y divide-[#ECE5D6]">
               {followUpsToday.map((f) => {
                 const c = clients.find((c) => c.id === f.clientId)
                 return (
                   <div key={f.id} className="flex items-center justify-between gap-3 py-2.5">
                     <div className="min-w-0">
                       <div className="truncate text-[13px]">{c ? (c.nomeFantasia ?? c.razaoSocial) : 'Cliente'}</div>
-                      <div className="mt-0.5 truncate text-[11.5px] text-[#8D95A3]">{f.contexto}</div>
+                      <div className="mt-0.5 truncate text-[11.5px] text-[#8F8676]">{f.contexto}</div>
                     </div>
                     <span className="mono shrink-0 pl-3 text-[11.5px] text-[#E2963C]">{formatRelativeDay(f.dataAgendada)}</span>
                   </div>
@@ -175,11 +175,11 @@ export default function Dashboard() {
           title="Clientes sem compra"
           action={
             <button onClick={() => navigate('/clientes')}>
-              <ChevronRight size={15} className="text-[#8D95A3]" />
+              <ChevronRight size={15} className="text-[#8F8676]" />
             </button>
           }
         >
-          <div className="divide-y divide-[#212833]">
+          <div className="divide-y divide-[#ECE5D6]">
             {inactiveClients.map((c) => (
               <div key={c.id} className="flex items-center justify-between py-2.5">
                 <span className="truncate text-[13px]">{c.nomeFantasia ?? c.razaoSocial}</span>

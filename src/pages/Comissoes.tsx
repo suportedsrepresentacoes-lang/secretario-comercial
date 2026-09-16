@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+﻿import { useMemo } from 'react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { useAppStore } from '../store/useAppStore'
 import Card from '../components/ui/Card'
@@ -44,7 +44,7 @@ export default function Comissoes() {
     <>
       <div className="mb-5">
         <h1 className="text-[20px] font-bold">Comissões</h1>
-        <p className="mt-1 text-[13px] text-[#8D95A3]">Acompanhamento de comissões por pedido e por indústria</p>
+        <p className="mt-1 text-[13px] text-[#8F8676]">Acompanhamento de comissões por pedido e por indústria</p>
       </div>
 
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -57,11 +57,11 @@ export default function Comissoes() {
         <Card className="lg:col-span-2" title="Comissão por mês">
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={trend}>
-              <CartesianGrid stroke="#212833" vertical={false} />
-              <XAxis dataKey="m" stroke="#8D95A3" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#8D95A3" fontSize={12} tickLine={false} axisLine={false} width={40} />
+              <CartesianGrid stroke="#ECE5D6" vertical={false} />
+              <XAxis dataKey="m" stroke="#8F8676" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#8F8676" fontSize={12} tickLine={false} axisLine={false} width={40} />
               <Tooltip
-                contentStyle={{ background: '#171C24', border: '1px solid #2A313D', borderRadius: 6, fontSize: 12 }}
+                contentStyle={{ background: '#F3EEE3', border: '1px solid #E4DCC8', borderRadius: 6, fontSize: 12 }}
                 formatter={(v) => currency(Number(v))}
               />
               <Bar dataKey="v" fill="#E2963C" radius={[3, 3, 0, 0]} barSize={28} />
@@ -75,20 +75,20 @@ export default function Comissoes() {
               <div key={ind.id}>
                 <div className="mb-1 flex items-center justify-between text-[12.5px]">
                   <span style={{ color: ind.cor }}>{ind.nome}</span>
-                  <span className="mono text-[#C7CCD6]">{currency(commission)}</span>
+                  <span className="mono text-[#5A5346]">{currency(commission)}</span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-[#212833]">
+                <div className="h-1.5 overflow-hidden rounded-full bg-[#ECE5D6]">
                   <div className="h-full rounded-full" style={{ width: `${Math.min(100, (sales / Math.max(...byIndustry.map((b) => b.sales))) * 100)}%`, background: ind.cor }} />
                 </div>
               </div>
             ))}
-            {byIndustry.length === 0 && <p className="text-[12.5px] text-[#8D95A3]">Sem pedidos registrados ainda.</p>}
+            {byIndustry.length === 0 && <p className="text-[12.5px] text-[#8F8676]">Sem pedidos registrados ainda.</p>}
           </div>
         </Card>
       </div>
 
       <Card className="!p-0 overflow-hidden">
-        <div className="hidden grid-cols-[0.8fr_1.4fr_1fr_0.9fr_0.9fr_0.9fr] gap-3 border-b border-[#2A313D] px-5 py-3 text-[11.5px] font-medium text-[#8D95A3] md:grid">
+        <div className="hidden grid-cols-[0.8fr_1.4fr_1fr_0.9fr_0.9fr_0.9fr] gap-3 border-b border-[#E4DCC8] px-5 py-3 text-[11.5px] font-medium text-[#8F8676] md:grid">
           <span>Pedido</span>
           <span>Cliente</span>
           <span>Data</span>
@@ -96,17 +96,17 @@ export default function Comissoes() {
           <span>Comissão</span>
           <span>Status</span>
         </div>
-        <div className="divide-y divide-[#212833]">
+        <div className="divide-y divide-[#ECE5D6]">
           {sorted.map((o) => {
             const client = clients.find((c) => c.id === o.clientId)
             return (
               <div key={o.id} className="grid grid-cols-2 gap-2 px-5 py-3 text-[13px] md:grid-cols-[0.8fr_1.4fr_1fr_0.9fr_0.9fr_0.9fr] md:items-center md:gap-3">
                 <span className="mono font-medium">{o.numero}</span>
-                <span className="truncate text-[#C7CCD6]">{client?.nomeFantasia ?? client?.razaoSocial}</span>
-                <span className="text-[#8D95A3]">{formatDate(o.dataCriacao)}</span>
-                <span className="mono text-[#C7CCD6]">{currency(orderTotal(o))}</span>
-                <span className="mono text-[#3FA9A0]">{currency(orderCommission(o))} <span className="text-[#8D95A3]">({o.comissaoPercentual}%)</span></span>
-                <span className="text-[11.5px] text-[#8D95A3]">{ORDER_STATUS_LABEL[o.status]}</span>
+                <span className="truncate text-[#5A5346]">{client?.nomeFantasia ?? client?.razaoSocial}</span>
+                <span className="text-[#8F8676]">{formatDate(o.dataCriacao)}</span>
+                <span className="mono text-[#5A5346]">{currency(orderTotal(o))}</span>
+                <span className="mono text-[#3FA9A0]">{currency(orderCommission(o))} <span className="text-[#8F8676]">({o.comissaoPercentual}%)</span></span>
+                <span className="text-[11.5px] text-[#8F8676]">{ORDER_STATUS_LABEL[o.status]}</span>
               </div>
             )
           })}

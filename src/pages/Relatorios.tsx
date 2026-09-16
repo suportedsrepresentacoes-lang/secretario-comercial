@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+﻿import { useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { useAppStore } from '../store/useAppStore'
 import Card from '../components/ui/Card'
@@ -38,7 +38,7 @@ export default function Relatorios() {
     <>
       <div className="mb-5">
         <h1 className="text-[20px] font-bold">Relatórios</h1>
-        <p className="mt-1 text-[13px] text-[#8D95A3]">Visão consolidada de vendas, comissões e carteira</p>
+        <p className="mt-1 text-[13px] text-[#8F8676]">Visão consolidada de vendas, comissões e carteira</p>
       </div>
 
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -50,14 +50,14 @@ export default function Relatorios() {
       <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card title="Vendas por indústria">
           {salesByIndustry.length === 0 ? (
-            <p className="py-8 text-center text-[12.5px] text-[#8D95A3]">Sem pedidos registrados.</p>
+            <p className="py-8 text-center text-[12.5px] text-[#8F8676]">Sem pedidos registrados.</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={salesByIndustry} layout="vertical" margin={{ left: 8 }}>
-                <CartesianGrid stroke="#212833" horizontal={false} />
-                <XAxis type="number" stroke="#8D95A3" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis dataKey="nome" type="category" stroke="#8D95A3" fontSize={11} tickLine={false} axisLine={false} width={130} />
-                <Tooltip contentStyle={{ background: '#171C24', border: '1px solid #2A313D', borderRadius: 6, fontSize: 12 }} formatter={(v) => currency(Number(v))} />
+                <CartesianGrid stroke="#ECE5D6" horizontal={false} />
+                <XAxis type="number" stroke="#8F8676" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis dataKey="nome" type="category" stroke="#8F8676" fontSize={11} tickLine={false} axisLine={false} width={130} />
+                <Tooltip contentStyle={{ background: '#F3EEE3', border: '1px solid #E4DCC8', borderRadius: 6, fontSize: 12 }} formatter={(v) => currency(Number(v))} />
                 <Bar dataKey="valor" radius={[0, 3, 3, 0]} barSize={16}>
                   {salesByIndustry.map((r) => <Cell key={r.nome} fill={r.cor} />)}
                 </Bar>
@@ -72,12 +72,12 @@ export default function Relatorios() {
               <Pie data={clientsByStatus} dataKey="n" nameKey="status" innerRadius={50} outerRadius={80} paddingAngle={2}>
                 {clientsByStatus.map((r) => <Cell key={r.status} fill={STATUS_COLOR[r.status]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: '#171C24', border: '1px solid #2A313D', borderRadius: 6, fontSize: 12 }} formatter={(v, n) => [String(v), STATUS_LABEL[n as ClientStatus]]} />
+              <Tooltip contentStyle={{ background: '#F3EEE3', border: '1px solid #E4DCC8', borderRadius: 6, fontSize: 12 }} formatter={(v, n) => [String(v), STATUS_LABEL[n as ClientStatus]]} />
             </PieChart>
           </ResponsiveContainer>
           <div className="flex flex-wrap justify-center gap-3">
             {clientsByStatus.map((r) => (
-              <span key={r.status} className="flex items-center gap-1.5 text-[11.5px] text-[#8D95A3]">
+              <span key={r.status} className="flex items-center gap-1.5 text-[11.5px] text-[#8F8676]">
                 <span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR[r.status] }} /> {STATUS_LABEL[r.status]} ({r.n})
               </span>
             ))}
@@ -90,15 +90,15 @@ export default function Relatorios() {
           {topClients.map(({ client, valor }) => (
             <div key={client.id}>
               <div className="mb-1 flex items-center justify-between text-[12.5px]">
-                <span className="text-[#C7CCD6]">{client.nomeFantasia ?? client.razaoSocial}</span>
+                <span className="text-[#5A5346]">{client.nomeFantasia ?? client.razaoSocial}</span>
                 <span className="mono text-[#E2963C]">{currency(valor)}</span>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-[#212833]">
+              <div className="h-1.5 overflow-hidden rounded-full bg-[#ECE5D6]">
                 <div className="h-full rounded-full bg-[#E2963C]" style={{ width: `${(valor / topClients[0].valor) * 100}%` }} />
               </div>
             </div>
           ))}
-          {topClients.length === 0 && <p className="py-4 text-center text-[12.5px] text-[#8D95A3]">Sem dados de faturamento ainda.</p>}
+          {topClients.length === 0 && <p className="py-4 text-center text-[12.5px] text-[#8F8676]">Sem dados de faturamento ainda.</p>}
         </div>
       </Card>
     </>

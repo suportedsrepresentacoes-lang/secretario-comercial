@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { Sparkles, Send } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { Button, Input } from '../components/ui/Field'
@@ -35,16 +35,16 @@ export default function IaComercial() {
         </div>
         <div>
           <h1 className="text-[16px] font-bold">IA Comercial</h1>
-          <p className="text-[12px] text-[#8D95A3]">Pergunte sobre sua carteira ou peça para agendar um follow-up</p>
+          <p className="text-[12px] text-[#8F8676]">Pergunte sobre sua carteira ou peça para agendar um follow-up</p>
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto rounded-md border border-[#2A313D] bg-[#1A1F27] p-4">
+      <div className="flex-1 space-y-3 overflow-y-auto rounded-md border border-[#E4DCC8] bg-[#FFFFFF] p-4">
         {aiMessages.map((m) => (
           <div key={m.id} className={`flex ${m.autor === 'usuario' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] whitespace-pre-line rounded-[10px] px-3.5 py-2.5 text-[13px] ${m.autor === 'usuario' ? 'bg-[#E2963C]/15 text-[#F2F0EA]' : 'bg-[#212833] text-[#F2F0EA]'}`}>
+            <div className={`max-w-[80%] whitespace-pre-line rounded-[10px] px-3.5 py-2.5 text-[13px] ${m.autor === 'usuario' ? 'bg-[#E2963C]/15 text-[#2B2620]' : 'bg-[#ECE5D6] text-[#2B2620]'}`}>
               {m.texto}
-              <div className="mono mt-1.5 text-[10px] text-[#8D95A3]">{formatTime(m.hora)}</div>
+              <div className="mono mt-1.5 text-[10px] text-[#8F8676]">{formatTime(m.hora)}</div>
             </div>
           </div>
         ))}
@@ -53,7 +53,7 @@ export default function IaComercial() {
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         {SUGGESTIONS.map((s) => (
-          <button key={s} onClick={() => submit(s)} className="rounded-full border border-[#2A313D] bg-[#171C24] px-2.5 py-1 text-[11.5px] text-[#8D95A3] hover:text-[#C7CCD6]">
+          <button key={s} onClick={() => submit(s)} className="rounded-full border border-[#E4DCC8] bg-[#F3EEE3] px-2.5 py-1 text-[11.5px] text-[#8F8676] hover:text-[#5A5346]">
             {s}
           </button>
         ))}

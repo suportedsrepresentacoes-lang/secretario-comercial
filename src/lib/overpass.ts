@@ -12,21 +12,44 @@ interface OverpassElement {
 
 // A instância pública principal do Overpass (overpass-api.de) fica sobrecarregada com frequência.
 // Tentamos espelhos alternativos em sequência antes de desistir, para a busca ser confiável.
+// O espelho que respondeu por último fica "fixado" como primeira tentativa nas próximas buscas,
+// para não perder tempo re-testando instâncias que já se mostraram lentas/fora do ar nesta sessão.
 const ENDPOINTS = [
+  'https://overpass.osm.ch/api/interpreter',
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
-  'https://overpass.osm.ch/api/interpreter',
 ]
+let preferredEndpoint = ENDPOINTS[0]
 
-function buildQuery(tags: { key: string; value: string }[], lat: number, lng: number, radiusMeters: number): string {
-  const filters = tags
+function escapeOverpassRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\"]/g, '\\$&')
+}
+
+function buildQuery(
+  tags: { key: string; value: string }[],
+  freeTextTerms: string[],
+  lat: number,
+  lng: number,
+  radiusMeters: number,
+): string {
+  const tagFilters = tags
     .map(
       (t) =>
         `  node["${t.key}"="${t.value}"](around:${radiusMeters},${lat},${lng});\n` +
         `  way["${t.key}"="${t.value}"](around:${radiusMeters},${lat},${lng});\n`,
     )
     .join('')
-  return `[out:json][timeout:20];\n(\n${filters});\nout center tags 200;`
+  // Segmentos personalizados (sem tag OSM conhecida) caem para busca pelo nome do local.
+  const nameFilters = freeTextTerms
+    .map((term) => {
+      const re = escapeOverpassRegex(term)
+      return (
+        `  node["name"~"${re}",i](around:${radiusMeters},${lat},${lng});\n` +
+        `  way["name"~"${re}",i](around:${radiusMeters},${lat},${lng});\n`
+      )
+    })
+    .join('')
+  return `[out:json][timeout:20];\n(\n${tagFilters}${nameFilters});\nout center tags 200;`
 }
 
 function formatAddress(tags: Record<string, string>): string {
@@ -54,13 +77,15 @@ async function fetchWithTimeout(url: string, body: string, outerSignal: AbortSig
 
 async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassElement[] }> {
   const body = `data=${encodeURIComponent(query)}`
-  for (const endpoint of ENDPOINTS) {
+  const order = [preferredEndpoint, ...ENDPOINTS.filter((e) => e !== preferredEndpoint)]
+  for (const endpoint of order) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     try {
-      const res = await fetchWithTimeout(endpoint, body, signal, 18000)
+      const res = await fetchWithTimeout(endpoint, body, signal, 8000)
       if (!res.ok) continue
       const json = await res.json()
       if (!Array.isArray(json.elements)) continue
+      preferredEndpoint = endpoint
       return json
     } catch {
       // tenta o próximo espelho
@@ -82,17 +107,22 @@ export async function searchEstablishments(
 ): Promise<Establishment[]> {
   const tagSet = new Map<string, { key: string; value: string }>()
   const categoryLookup = new Map<string, string>()
-  segments.forEach((s) =>
+  const freeTextTerms: string[] = []
+  segments.forEach((s) => {
+    if (s.osmTags.length === 0) {
+      freeTextTerms.push(s.label)
+      return
+    }
     s.osmTags.forEach((t) => {
       const key = `${t.key}=${t.value}`
       tagSet.set(key, t)
       if (!categoryLookup.has(key)) categoryLookup.set(key, s.label)
-    }),
-  )
+    })
+  })
   const tags = Array.from(tagSet.values())
-  if (tags.length === 0) return []
+  if (tags.length === 0 && freeTextTerms.length === 0) return []
 
-  const query = buildQuery(tags, origin.lat, origin.lng, Math.round(radiusKm * 1000))
+  const query = buildQuery(tags, freeTextTerms, origin.lat, origin.lng, Math.round(radiusKm * 1000))
   const json = await queryOverpass(query, signal)
   const elements = json.elements ?? []
 
@@ -107,7 +137,17 @@ export async function searchEstablishments(
     if (seen.has(dedupeKey)) continue
     seen.add(dedupeKey)
 
-    const tagKey = el.tags.shop ? `shop=${el.tags.shop}` : el.tags.craft ? `craft=${el.tags.craft}` : ''
+    const tagKey = el.tags.shop
+      ? `shop=${el.tags.shop}`
+      : el.tags.craft
+        ? `craft=${el.tags.craft}`
+        : el.tags.office
+          ? `office=${el.tags.office}`
+          : el.tags.amenity
+            ? `amenity=${el.tags.amenity}`
+            : el.tags.man_made
+              ? `man_made=${el.tags.man_made}`
+              : ''
 
     results.push({
       id: `${el.type}/${el.id}`,
@@ -123,4 +163,29 @@ export async function searchEstablishments(
   }
 
   return results.sort((a, b) => a.distanciaKm - b.distanciaKm)
+}
+
+const RADIUS_EXPANSION_STEPS = [1, 2, 4]
+const MAX_RADIUS_KM = 80
+
+// Repete a busca ampliando o raio automaticamente se houver poucos resultados
+// (menos de `minResults`), até o limite de `radiusKm`*4 ou 80 km.
+export async function searchEstablishmentsWithExpansion(
+  segments: Segment[],
+  origin: { lat: number; lng: number },
+  radiusKm: number,
+  options: { autoExpand: boolean; minResults?: number; signal?: AbortSignal } = { autoExpand: true },
+): Promise<{ results: Establishment[]; usedRadiusKm: number }> {
+  const minResults = options.minResults ?? 3
+  const steps = options.autoExpand ? RADIUS_EXPANSION_STEPS : [1]
+  let last: Establishment[] = []
+  let usedRadiusKm = radiusKm
+  for (const multiplier of steps) {
+    const r = Math.min(radiusKm * multiplier, MAX_RADIUS_KM)
+    const results = await searchEstablishments(segments, origin, r, options.signal)
+    last = results
+    usedRadiusKm = r
+    if (results.length >= minResults || r >= MAX_RADIUS_KM) break
+  }
+  return { results: last, usedRadiusKm }
 }

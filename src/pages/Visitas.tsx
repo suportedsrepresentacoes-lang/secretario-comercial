@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Plus, ClipboardList, Check } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
@@ -70,15 +70,15 @@ export default function Visitas() {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-[20px] font-bold">Visitas</h1>
-          <p className="mt-1 text-[13px] text-[#8D95A3]">{visits.length} visitas registradas</p>
+          <p className="mt-1 text-[13px] text-[#8F8676]">{visits.length} visitas registradas</p>
         </div>
         <Button onClick={() => { setNewForm(emptyNew(clients[0]?.id ?? '')); setNewOpen(true) }}><Plus size={15} /> Agendar visita</Button>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-1.5">
-        <button onClick={() => setStatusFilter('todos')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${statusFilter === 'todos' ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#2A313D] text-[#8D95A3]'}`}>Todas</button>
+        <button onClick={() => setStatusFilter('todos')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${statusFilter === 'todos' ? 'border-[#E2963C]/50 bg-[#E2963C]/15 text-[#E2963C]' : 'border-[#E4DCC8] text-[#8F8676]'}`}>Todas</button>
         {(Object.keys(VISIT_STATUS_LABEL) as VisitStatus[]).map((s) => (
-          <button key={s} onClick={() => setStatusFilter(s)} className="rounded-full border px-2.5 py-1 text-[11.5px]" style={statusFilter === s ? { borderColor: `${STATUS_COLOR[s]}55`, background: `${STATUS_COLOR[s]}1A`, color: STATUS_COLOR[s] } : { borderColor: '#2A313D', color: '#8D95A3' }}>
+          <button key={s} onClick={() => setStatusFilter(s)} className="rounded-full border px-2.5 py-1 text-[11.5px]" style={statusFilter === s ? { borderColor: `${STATUS_COLOR[s]}55`, background: `${STATUS_COLOR[s]}1A`, color: STATUS_COLOR[s] } : { borderColor: '#E4DCC8', color: '#8F8676' }}>
             {VISIT_STATUS_LABEL[s]}
           </button>
         ))}
@@ -96,7 +96,7 @@ export default function Visitas() {
                   </div>
                   <div>
                     <div className="text-[13.5px] font-medium">{client?.nomeFantasia ?? client?.razaoSocial}</div>
-                    <div className="mono text-[11.5px] text-[#8D95A3]">{formatDateTime(v.dataHora)}</div>
+                    <div className="mono text-[11.5px] text-[#8F8676]">{formatDateTime(v.dataHora)}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -108,12 +108,12 @@ export default function Visitas() {
                   )}
                 </div>
               </div>
-              {v.resultado && <p className="mt-3 border-t border-[#212833] pt-3 text-[12.5px] text-[#C7CCD6]">{v.resultado}</p>}
-              {v.proximaAcao && <p className="mt-1 text-[11.5px] text-[#8D95A3]">Próxima ação: {v.proximaAcao}</p>}
+              {v.resultado && <p className="mt-3 border-t border-[#ECE5D6] pt-3 text-[12.5px] text-[#5A5346]">{v.resultado}</p>}
+              {v.proximaAcao && <p className="mt-1 text-[11.5px] text-[#8F8676]">Próxima ação: {v.proximaAcao}</p>}
             </Card>
           )
         })}
-        {filtered.length === 0 && <p className="py-10 text-center text-[13px] text-[#8D95A3]">Nenhuma visita encontrada.</p>}
+        {filtered.length === 0 && <p className="py-10 text-center text-[13px] text-[#8F8676]">Nenhuma visita encontrada.</p>}
       </div>
 
       <Drawer
@@ -146,7 +146,7 @@ export default function Visitas() {
                         : [...outcome.produtosApresentadosIds, p.id],
                     })
                   }
-                  className={`rounded-full border px-2.5 py-1 text-[11px] ${checked ? 'border-[#3FA9A0]/50 bg-[#3FA9A0]/15 text-[#3FA9A0]' : 'border-[#2A313D] text-[#8D95A3]'}`}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] ${checked ? 'border-[#3FA9A0]/50 bg-[#3FA9A0]/15 text-[#3FA9A0]' : 'border-[#E4DCC8] text-[#8F8676]'}`}
                 >
                   {p.nome}
                 </button>

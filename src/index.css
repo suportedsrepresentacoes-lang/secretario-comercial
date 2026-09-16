@@ -1,23 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  --color-bg: #12151B;
-  --color-bg-sidebar: #0F1218;
-  --color-bg-card: #1A1F27;
-  --color-bg-hover: #171C24;
-  --color-bg-active: #1E2530;
-  --color-bg-chip: #212833;
+  --color-bg: #F7F4EE;
+  --color-bg-sidebar: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-hover: #F3EEE3;
+  --color-bg-active: #ECE3D2;
+  --color-bg-chip: #ECE5D6;
 
-  --color-border: #2A313D;
-  --color-border-soft: #212833;
+  --color-border: #E4DCC8;
+  --color-border-soft: #ECE5D6;
 
-  --color-text: #F2F0EA;
-  --color-text-muted: #8D95A3;
-  --color-text-secondary: #C7CCD6;
+  --color-text: #2B2620;
+  --color-text-muted: #8F8676;
+  --color-text-secondary: #5A5346;
 
   --color-accent: #E2963C;
   --color-teal: #3FA9A0;
@@ -42,41 +42,41 @@ body {
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: #2A313D; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #E4DCC8; border-radius: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 * {
-  scrollbar-color: #2A313D transparent;
+  scrollbar-color: #E4DCC8 transparent;
   scrollbar-width: thin;
 }
 
 .leaflet-container {
-  background: #171C24 !important;
+  background: #F3EEE3 !important;
   font-family: var(--font-sans);
 }
 
 .leaflet-tile-pane {
-  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.7);
+  filter: saturate(0.85) brightness(1.02);
 }
 
 .leaflet-popup-content-wrapper {
-  background: #1A1F27 !important;
-  color: #F2F0EA !important;
-  border: 1px solid #2A313D;
+  background: #FFFFFF !important;
+  color: #2B2620 !important;
+  border: 1px solid #E4DCC8;
   border-radius: 8px;
 }
 .leaflet-popup-tip {
-  background: #1A1F27 !important;
+  background: #FFFFFF !important;
 }
 .leaflet-control-zoom a {
-  background: #1A1F27 !important;
-  color: #F2F0EA !important;
-  border-color: #2A313D !important;
+  background: #FFFFFF !important;
+  color: #2B2620 !important;
+  border-color: #E4DCC8 !important;
 }
 .leaflet-control-attribution {
-  background: rgba(18,21,27,0.7) !important;
-  color: #8D95A3 !important;
+  background: rgba(255,255,255,0.75) !important;
+  color: #8F8676 !important;
 }
 .leaflet-control-attribution a {
-  color: #C7CCD6 !important;
+  color: #5A5346 !important;
 }

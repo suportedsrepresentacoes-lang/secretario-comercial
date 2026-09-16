@@ -6,16 +6,15 @@ import AppShell from './components/layout/AppShell'
 // Os demais módulos (CRM, WhatsApp, IA, pedidos, produtos, indústrias, comissões,
 // despesas, relatórios) seguem preservados em src/pages/ para evoluções futuras,
 // mas ficam fora da navegação e das rotas desta primeira versão.
-const Inicio = lazy(() => import('./pages/Inicio'))
 const Prospeccao = lazy(() => import('./pages/Prospeccao'))
-const Clientes = lazy(() => import('./pages/Clientes'))
 const Rotas = lazy(() => import('./pages/Rotas'))
-const Historico = lazy(() => import('./pages/Historico'))
+const Salvas = lazy(() => import('./pages/Salvas'))
+const Clientes = lazy(() => import('./pages/Clientes'))
 const Configuracoes = lazy(() => import('./pages/Configuracoes'))
 
 function PageLoader() {
   return (
-    <div className="flex h-64 items-center justify-center text-[13px] text-[#8D95A3]">
+    <div className="flex h-64 items-center justify-center text-[13px] text-[#8F8676]">
       Carregando…
     </div>
   )
@@ -27,11 +26,10 @@ export default function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route element={<AppShell />}>
-            <Route path="/" element={<Inicio />} />
-            <Route path="/prospeccao" element={<Prospeccao />} />
-            <Route path="/clientes" element={<Clientes />} />
+            <Route path="/" element={<Prospeccao />} />
             <Route path="/rotas" element={<Rotas />} />
-            <Route path="/historico" element={<Historico />} />
+            <Route path="/salvas" element={<Salvas />} />
+            <Route path="/clientes" element={<Clientes />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
