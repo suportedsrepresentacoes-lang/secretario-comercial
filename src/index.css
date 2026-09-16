@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --color-bg: #12151B;
+  --color-bg-sidebar: #0F1218;
+  --color-bg-card: #1A1F27;
+  --color-bg-hover: #171C24;
+  --color-bg-active: #1E2530;
+  --color-bg-chip: #212833;
+
+  --color-border: #2A313D;
+  --color-border-soft: #212833;
+
+  --color-text: #F2F0EA;
+  --color-text-muted: #8D95A3;
+  --color-text-secondary: #C7CCD6;
+
+  --color-accent: #E2963C;
+  --color-teal: #3FA9A0;
+  --color-danger: #D9695F;
+  --color-blue: #5B8DEF;
+  --color-purple: #9B7FE0;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #2A313D; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+* {
+  scrollbar-color: #2A313D transparent;
+  scrollbar-width: thin;
+}
+
+.leaflet-container {
+  background: #171C24 !important;
+  font-family: var(--font-sans);
+}
+
+.leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.7);
+}
+
+.leaflet-popup-content-wrapper {
+  background: #1A1F27 !important;
+  color: #F2F0EA !important;
+  border: 1px solid #2A313D;
+  border-radius: 8px;
+}
+.leaflet-popup-tip {
+  background: #1A1F27 !important;
+}
+.leaflet-control-zoom a {
+  background: #1A1F27 !important;
+  color: #F2F0EA !important;
+  border-color: #2A313D !important;
+}
+.leaflet-control-attribution {
+  background: rgba(18,21,27,0.7) !important;
+  color: #8D95A3 !important;
+}
+.leaflet-control-attribution a {
+  color: #C7CCD6 !important;
+}
