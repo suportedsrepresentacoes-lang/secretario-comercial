@@ -160,8 +160,10 @@ function establishmentsFrom(json: { elements: OverpassNode[] }, origin: { lat: n
 
 export interface PlacesSearchResult {
   results: Establishment[]
-  /** Consulta Overpass QL usada — útil para depurar abrindo no Overpass Turbo. */
+  /** Consulta Overpass QL combinada — útil só para depurar abrindo no Overpass Turbo. */
   query: string | null
+  /** true quando pelo menos uma categoria pesquisada não respondeu (mas outras trouxeram dados). */
+  partial: boolean
 }
 
 // Monta o link do Overpass Turbo (ferramenta oficial do projeto OpenStreetMap) já com a mesma
@@ -181,6 +183,12 @@ export function overpassAnyShopDebugUrl(origin: { lat: number; lng: number }, ra
 
 // Busca estabelecimentos num raio exato a partir da origem informada — sem nenhuma expansão
 // automática. O raio buscado é sempre exatamente o raio pedido pelo usuário.
+//
+// Cada tag/categoria pesquisada vira uma consulta Overpass PEQUENA e SEPARADA, todas disparadas em
+// paralelo. Uma única consulta combinando várias tags de uma vez (ex: 3 segmentos = 5 tags = 10
+// cláusulas "around") é pesada o bastante para os servidores públicos do Overpass — sobrecarregados
+// — travarem com timeout de runtime, mesmo com poucos segundos de espera configurados. Consultas
+// menores respondem muito mais rápido e, se uma categoria falhar, as outras continuam valendo.
 export async function searchPlaces(
   segments: Segment[],
   origin: { lat: number; lng: number },
@@ -202,11 +210,31 @@ export async function searchPlaces(
     })
   })
   const tags = Array.from(tagSet.values())
-  if (tags.length === 0 && freeText.length === 0) return { results: [], query: null }
+  if (tags.length === 0 && freeText.length === 0) return { results: [], query: null, partial: false }
 
-  // Todos os segmentos entram numa única consulta Overpass (uma requisição, não uma por segmento)
-  // — isso já é o jeito mais rápido de pesquisar vários segmentos ao mesmo tempo.
-  const query = buildQuery(tags, freeText, origin.lat, origin.lng, Math.round(radiusKm * 1000))
-  const json = await queryOverpass(query, signal)
-  return { results: establishmentsFrom(json, origin, categoryByTag), query }
+  const radiusM = Math.round(radiusKm * 1000)
+  // Consulta combinada guardada só para o link de diagnóstico (Overpass Turbo) — a execução real é
+  // sempre dividida em consultas menores, abaixo.
+  const combinedQuery = buildQuery(tags, freeText, origin.lat, origin.lng, radiusM)
+
+  const clauseQueries = [
+    ...tags.map((t) => buildQuery([t], [], origin.lat, origin.lng, radiusM)),
+    ...freeText.map((term) => buildQuery([], [term], origin.lat, origin.lng, radiusM)),
+  ]
+  const settled = await Promise.all(
+    clauseQueries.map((q) => queryOverpass(q, signal).then((v) => v, () => null)),
+  )
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+
+  if (settled.every((s) => s === null)) {
+    throw new Error('Não foi possível buscar estabelecimentos agora — os servidores públicos do OpenStreetMap podem estar sobrecarregados. Tente novamente em instantes.')
+  }
+
+  const merged: OverpassNode[] = []
+  settled.forEach((s) => { if (s) merged.push(...s.elements) })
+  return {
+    results: establishmentsFrom({ elements: merged }, origin, categoryByTag),
+    query: combinedQuery,
+    partial: settled.some((s) => s === null),
+  }
 }

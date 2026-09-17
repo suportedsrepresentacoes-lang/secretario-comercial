@@ -65,6 +65,7 @@ export default function Buscar() {
   const [searchError, setSearchError] = useState<string | null>(null)
   const [results, setResults] = useState<Establishment[]>([])
   const [lastQuery, setLastQuery] = useState<string | null>(null)
+  const [partialResults, setPartialResults] = useState(false)
   const [savedAsClient, setSavedAsClient] = useState<Set<string>>(new Set())
   const abortRef = useRef<AbortController | null>(null)
 
@@ -134,13 +135,15 @@ export default function Buscar() {
     }
     setSlowSearch(false)
     setSearchError(null)
+    setPartialResults(false)
     const slowTimer = setTimeout(() => setSlowSearch(true), 4000)
     try {
-      const { results: found, query } = await searchPlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
+      const { results: found, query, partial } = await searchPlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
       if (controller.signal.aborted) return
       setResults(found)
       setSearchedRadiusKm(atRadiusKm)
       setLastQuery(query)
+      setPartialResults(partial)
       if (found.length === 0) setSearchError('Nenhum estabelecimento encontrado nessa região. Tente aumentar o raio ou escolher outros segmentos.')
     } catch (err) {
       if (controller.signal.aborted) return
@@ -392,6 +395,12 @@ export default function Buscar() {
               <div className="flex items-start gap-2 border-b border-[#E1EDFB] px-4 py-3 text-[12.5px] text-[#B45309]">
                 <AlertCircle size={14} className="mt-0.5 shrink-0" />
                 <span className="flex-1">{searchError}</span>
+              </div>
+            )}
+            {!searching && partialResults && (
+              <div className="flex items-start gap-2 border-b border-[#E1EDFB] px-4 py-2.5 text-[12px] text-[#B45309]">
+                <AlertCircle size={13} className="mt-0.5 shrink-0" />
+                <span className="flex-1">Algumas categorias não responderam (servidor sobrecarregado) — os resultados abaixo podem estar incompletos. <button onClick={() => runSearch(searchedRadiusKm ?? radiusKm)} className="font-medium text-[#3B82F6] underline decoration-dotted">tentar de novo</button></span>
               </div>
             )}
             {!searching && results.length === 0 && lastQuery && (
