@@ -28,16 +28,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check secret is available (does not print the value)
-        env:
-          VITE_GOOGLE_PLACES_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
-        run: |
-          if [ -z "$VITE_GOOGLE_PLACES_API_KEY" ]; then
-            echo "::warning::VITE_GOOGLE_MAPS_API_KEY secret is EMPTY or not set on this repository."
-          else
-            echo "VITE_GOOGLE_MAPS_API_KEY secret is set (length: ${#VITE_GOOGLE_PLACES_API_KEY} characters)."
-          fi
-
       - name: Build
         env:
           VITE_GOOGLE_PLACES_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
