@@ -18,8 +18,8 @@ export function LocationButtons({
   const [notice, setNotice] = useState<string | null>(null)
   const pad = size === 'sm' ? 'px-2.5 py-1.5 text-[12px]' : ''
 
-  function handleNavigate() {
-    const res = openNavigation(lat, lng)
+  function handleNavigate(app: 'google' | 'waze') {
+    const res = openNavigation(lat, lng, app)
     setNotice(res.ok ? null : res.message ?? null)
   }
 
@@ -30,9 +30,12 @@ export function LocationButtons({
 
   return (
     <div className={className}>
-      <div className="flex gap-2">
-        <Button variant="secondary" className={`flex-1 ${pad}`} onClick={handleNavigate}>
-          <Navigation size={13} /> Navegar
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" className={`flex-1 ${pad}`} onClick={() => handleNavigate('google')}>
+          <Navigation size={13} /> Google Maps
+        </Button>
+        <Button variant="secondary" className={`flex-1 ${pad}`} onClick={() => handleNavigate('waze')}>
+          <Navigation size={13} /> Waze
         </Button>
         <Button variant="secondary" className={`flex-1 ${pad}`} onClick={handleStreetView}>
           <Camera size={13} /> Street View

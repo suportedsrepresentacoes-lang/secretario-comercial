@@ -375,6 +375,17 @@ export default function Buscar() {
               </span>
               {searchedRadiusKm != null && <span className="text-[11px] text-[#6B7F93]">raio usado: {searchedRadiusKm} km</span>}
             </div>
+            {results.length > 0 && (
+              <div className="flex items-center gap-3 border-b border-[#E1EDFB] px-4 py-2 text-[11.5px]">
+                <button onClick={() => results.forEach((r) => { if (!draftIds.has(r.id)) handleAddToRoute(r) })} className="font-medium text-[#3B82F6] underline decoration-dotted">
+                  selecionar todos
+                </button>
+                <button onClick={() => results.forEach((r) => { if (draftIds.has(r.id)) handleAddToRoute(r) })} className="font-medium text-[#6B7F93] underline decoration-dotted">
+                  desmarcar todos
+                </button>
+                {draftStops.length > 0 && <span className="ml-auto text-[#6B7F93]">{draftStops.length} na rota</span>}
+              </div>
+            )}
             {!searching && searchedRadiusKm != null && results.length < EXPAND_MIN_RESULTS && (
               <div className="flex items-center justify-between gap-2 border-b border-[#E1EDFB] bg-[#EAF3FC] px-4 py-2.5 text-[12.5px] text-[#33495E]">
                 <span>
