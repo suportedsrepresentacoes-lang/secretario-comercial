@@ -65,6 +65,7 @@ export default function Buscar() {
   const [searchError, setSearchError] = useState<string | null>(null)
   const [results, setResults] = useState<Establishment[]>([])
   const [lastQuery, setLastQuery] = useState<string | null>(null)
+  const [tagsUsed, setTagsUsed] = useState<{ key: string; value: string; category: string }[]>([])
   const [partialResults, setPartialResults] = useState(false)
   const [savedAsClient, setSavedAsClient] = useState<Set<string>>(new Set())
   const abortRef = useRef<AbortController | null>(null)
@@ -138,15 +139,18 @@ export default function Buscar() {
     setPartialResults(false)
     const slowTimer = setTimeout(() => setSlowSearch(true), 4000)
     try {
-      const { results: found, query, partial } = await searchPlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
+      const { results: found, query, partial, tagsUsed: tags } = await searchPlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
       if (controller.signal.aborted) return
       setResults(found)
       setSearchedRadiusKm(atRadiusKm)
       setLastQuery(query)
+      setTagsUsed(tags)
       setPartialResults(partial)
       if (found.length === 0) setSearchError('Nenhum estabelecimento encontrado nessa região. Tente aumentar o raio ou escolher outros segmentos.')
     } catch (err) {
       if (controller.signal.aborted) return
+      const tags = (err as { tagsUsed?: typeof tagsUsed })?.tagsUsed
+      if (tags) setTagsUsed(tags)
       setSearchError(err instanceof Error ? err.message : 'Falha ao buscar estabelecimentos. Tente novamente.')
     } finally {
       if (!controller.signal.aborted) {
@@ -322,6 +326,16 @@ export default function Buscar() {
                   ver qualquer loja no OSM aqui perto
                 </a>
               </p>
+              {tagsUsed.length > 0 && (
+                <p className="mono mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 pl-[18px] text-[10.5px] text-[#93A5BC]">
+                  <span className="font-sans">tags OSM usadas nesta busca:</span>
+                  {tagsUsed.map((t, i) => (
+                    <span key={i} className="rounded-full border border-[#CFE0F5] px-1.5 py-0.5" title={t.category}>
+                      {t.key}={t.value}
+                    </span>
+                  ))}
+                </p>
+              )}
             </div>
           )}
 

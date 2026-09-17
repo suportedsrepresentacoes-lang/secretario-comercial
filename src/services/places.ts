@@ -27,22 +27,16 @@ function escapeRegex(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\"]/g, '\\$&')
 }
 
+// "nwr" busca nos três tipos de elemento do OpenStreetMap de uma vez (node + way + relation) —
+// um estabelecimento pode estar cadastrado em qualquer um dos três, e usar só "node"+"way" deixava
+// de fora o que estivesse mapeado como relation.
 function buildQuery(tags: { key: string; value: string }[], freeText: string[], lat: number, lng: number, radiusM: number): string {
-  const byTag = tags
-    .map(
-      (t) =>
-        `  node["${t.key}"="${t.value}"](around:${radiusM},${lat},${lng});\n` +
-        `  way["${t.key}"="${t.value}"](around:${radiusM},${lat},${lng});\n`,
-    )
-    .join('')
+  const byTag = tags.map((t) => `  nwr["${t.key}"="${t.value}"](around:${radiusM},${lat},${lng});\n`).join('')
   // Segmentos personalizados (sem tag OSM conhecida) caem para busca por nome do local.
   const byName = freeText
     .map((term) => {
       const re = escapeRegex(term)
-      return (
-        `  node["name"~"${re}",i](around:${radiusM},${lat},${lng});\n` +
-        `  way["name"~"${re}",i](around:${radiusM},${lat},${lng});\n`
-      )
+      return `  nwr["name"~"${re}",i](around:${radiusM},${lat},${lng});\n`
     })
     .join('')
   return `[out:json][timeout:15];\n(\n${byTag}${byName});\nout center tags 200;`
@@ -164,6 +158,8 @@ export interface PlacesSearchResult {
   query: string | null
   /** true quando pelo menos uma categoria pesquisada não respondeu (mas outras trouxeram dados). */
   partial: boolean
+  /** Toda tag OSM realmente pesquisada nesta busca (união de todos os segmentos selecionados) — exibida na tela para conferência. */
+  tagsUsed: { key: string; value: string; category: string }[]
 }
 
 // Monta o link do Overpass Turbo (ferramenta oficial do projeto OpenStreetMap) já com a mesma
@@ -177,7 +173,7 @@ export function overpassTurboUrl(query: string): string {
 // app: mostra se o OpenStreetMap tem alguma loja cadastrada na região, ponto.
 export function overpassAnyShopDebugUrl(origin: { lat: number; lng: number }, radiusKm: number): string {
   const radiusM = Math.round(radiusKm * 1000)
-  const query = `[out:json][timeout:25];\n(\n  node["shop"](around:${radiusM},${origin.lat},${origin.lng});\n  way["shop"](around:${radiusM},${origin.lat},${origin.lng});\n);\nout center tags 100;`
+  const query = `[out:json][timeout:25];\n(\n  nwr["shop"](around:${radiusM},${origin.lat},${origin.lng});\n);\nout center tags 100;`
   return overpassTurboUrl(query)
 }
 
@@ -210,31 +206,56 @@ export async function searchPlaces(
     })
   })
   const tags = Array.from(tagSet.values())
-  if (tags.length === 0 && freeText.length === 0) return { results: [], query: null, partial: false }
+  const tagsUsed = tags.map((t) => ({ ...t, category: categoryByTag.get(`${t.key}=${t.value}`) ?? '' }))
+  if (tags.length === 0 && freeText.length === 0) return { results: [], query: null, partial: false, tagsUsed: [] }
 
   const radiusM = Math.round(radiusKm * 1000)
   // Consulta combinada guardada só para o link de diagnóstico (Overpass Turbo) — a execução real é
   // sempre dividida em consultas menores, abaixo.
   const combinedQuery = buildQuery(tags, freeText, origin.lat, origin.lng, radiusM)
 
+  const clauseLabels = [...tags.map((t) => `${t.key}=${t.value}`), ...freeText.map((term) => `nome~"${term}"`)]
   const clauseQueries = [
     ...tags.map((t) => buildQuery([t], [], origin.lat, origin.lng, radiusM)),
     ...freeText.map((term) => buildQuery([], [term], origin.lat, origin.lng, radiusM)),
   ]
+  console.log('[CampoVista] busca de estabelecimentos', {
+    origem: origin,
+    raioKm: radiusKm,
+    segmentos: segments.map((s) => s.label),
+    tagsGeradas: tagsUsed,
+    termosLivres: freeText,
+  })
   const settled = await Promise.all(
-    clauseQueries.map((q) => queryOverpass(q, signal).then((v) => v, () => null)),
+    clauseQueries.map((q, i) =>
+      queryOverpass(q, signal).then(
+        (v) => {
+          console.log(`[CampoVista] "${clauseLabels[i]}" → ${v.elements.length} elemento(s)`)
+          return v
+        },
+        (e) => {
+          console.log(`[CampoVista] "${clauseLabels[i]}" → falhou (${e instanceof Error ? e.message : e})`)
+          return null
+        },
+      ),
+    ),
   )
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
   if (settled.every((s) => s === null)) {
-    throw new Error('Não foi possível buscar estabelecimentos agora — os servidores públicos do OpenStreetMap podem estar sobrecarregados. Tente novamente em instantes.')
+    const err = new Error('Não foi possível buscar estabelecimentos agora — os servidores públicos do OpenStreetMap podem estar sobrecarregados. Tente novamente em instantes.') as Error & { tagsUsed?: typeof tagsUsed }
+    err.tagsUsed = tagsUsed
+    throw err
   }
 
   const merged: OverpassNode[] = []
   settled.forEach((s) => { if (s) merged.push(...s.elements) })
+  const results = establishmentsFrom({ elements: merged }, origin, categoryByTag)
+  console.log('[CampoVista] resultado final', { elementosRecebidos: merged.length, resultadoFinal: results.length, algumaCategoriaFalhou: settled.some((s) => s === null) })
   return {
-    results: establishmentsFrom({ elements: merged }, origin, categoryByTag),
+    results,
     query: combinedQuery,
     partial: settled.some((s) => s === null),
+    tagsUsed,
   }
 }
