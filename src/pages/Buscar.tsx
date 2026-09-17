@@ -357,21 +357,26 @@ export default function Buscar() {
               </span>
               {searchedRadiusKm != null && <span className="text-[11px] text-[#6B7F93]">raio usado: {searchedRadiusKm} km</span>}
             </div>
-            {!searchError && results.length > 0 && results.length < EXPAND_MIN_RESULTS && (searchedRadiusKm ?? radiusKm) < EXPAND_MAX_KM && (
+            {!searching && searchedRadiusKm != null && results.length < EXPAND_MIN_RESULTS && (
               <div className="flex items-center justify-between gap-2 border-b border-[#E1EDFB] bg-[#EAF3FC] px-4 py-2.5 text-[12.5px] text-[#33495E]">
-                <span>Encontramos apenas {results.length} empresa{results.length > 1 ? 's' : ''} em {searchedRadiusKm ?? radiusKm} km.</span>
-                <button onClick={handleExpand} disabled={expanding} className="flex shrink-0 items-center gap-1 font-medium text-[#3B82F6] disabled:opacity-60">
-                  <ChevronsUp size={13} /> {expanding ? 'Ampliando…' : `Ampliar para ${Math.min((searchedRadiusKm ?? radiusKm) * 2, EXPAND_MAX_KM)} km`}
-                </button>
+                <span>
+                  {results.length === 0
+                    ? `Nenhuma empresa encontrada em ${searchedRadiusKm} km.`
+                    : `Encontramos apenas ${results.length} empresa${results.length > 1 ? 's' : ''} em ${searchedRadiusKm} km.`}
+                </span>
+                {searchedRadiusKm < EXPAND_MAX_KM ? (
+                  <button onClick={handleExpand} disabled={expanding} className="flex shrink-0 items-center gap-1 font-medium text-[#3B82F6] disabled:opacity-60">
+                    <ChevronsUp size={13} /> {expanding ? 'Ampliando…' : `Ampliar para ${Math.min(searchedRadiusKm * 2, EXPAND_MAX_KM)} km`}
+                  </button>
+                ) : (
+                  <button onClick={() => runSearch(searchedRadiusKm)} className="shrink-0 font-medium text-[#3B82F6] underline decoration-dotted">tentar novamente</button>
+                )}
               </div>
             )}
             {searchError && (
               <div className="flex items-start gap-2 border-b border-[#E1EDFB] px-4 py-3 text-[12.5px] text-[#B45309]">
                 <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                <span className="flex-1">
-                  {searchError}
-                  <button onClick={() => runSearch(searchedRadiusKm ?? radiusKm)} className="ml-2 font-medium text-[#3B82F6] underline decoration-dotted">tentar novamente</button>
-                </span>
+                <span className="flex-1">{searchError}</span>
               </div>
             )}
             <div className="max-h-[420px] divide-y divide-[#E1EDFB] overflow-y-auto">

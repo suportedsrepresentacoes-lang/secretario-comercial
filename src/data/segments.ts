@@ -11,6 +11,7 @@ export const SEGMENTS: Segment[] = [
       { key: 'shop', value: 'doityourself' },
       { key: 'shop', value: 'trade' },
       { key: 'shop', value: 'hardware' },
+      { key: 'shop', value: 'building_materials' },
     ],
   },
   { id: 'madeireira', label: 'Madeireira', osmTags: [{ key: 'craft', value: 'carpenter' }, { key: 'shop', value: 'doityourself' }] },

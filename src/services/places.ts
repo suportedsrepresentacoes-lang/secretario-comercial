@@ -78,16 +78,39 @@ function fetchMirror(url: string, body: string, outerSignal: AbortSignal | undef
     })
 }
 
-// Dispara os espelhos em paralelo e usa o primeiro que responder com sucesso (Promise.any ignora
-// rejeições isoladas). Só falha se todos os espelhos falharem/expirarem.
+// Dispara os espelhos todos em paralelo (nunca um de cada vez — isso é o que tornava a busca
+// lenta). Usa o primeiro que trouxer resultados de verdade; um espelho que responde rápido mas
+// vazio não pode "vencer" antes que os outros tenham chance de responder, senão perderíamos dados
+// que outro espelho teria. Só aceita "zero resultados" quando TODOS os espelhos concordarem.
 async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassNode[] }> {
   const body = `data=${encodeURIComponent(query)}`
-  try {
-    return await Promise.any(MIRRORS.map((mirror) => fetchMirror(mirror, body, signal)))
-  } catch {
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-    throw new Error('Não foi possível buscar estabelecimentos agora — os servidores públicos do OpenStreetMap podem estar sobrecarregados. Tente novamente em instantes.')
-  }
+  const settled = MIRRORS.map((mirror) => fetchMirror(mirror, body, signal).then((v) => ({ ok: true as const, v }), (e) => ({ ok: false as const, e })))
+
+  return new Promise((resolve, reject) => {
+    let pending = settled.length
+    let emptyFallback: { elements: OverpassNode[] } | null = null
+    settled.forEach((p) => {
+      p.then((result) => {
+        pending--
+        if (result.ok) {
+          if (result.v.elements.length > 0) {
+            resolve(result.v)
+            return
+          }
+          emptyFallback = result.v
+        }
+        if (pending === 0) {
+          if (signal?.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'))
+          } else if (emptyFallback) {
+            resolve(emptyFallback)
+          } else {
+            reject(new Error('Não foi possível buscar estabelecimentos agora — os servidores públicos do OpenStreetMap podem estar sobrecarregados. Tente novamente em instantes.'))
+          }
+        }
+      })
+    })
+  })
 }
 
 function establishmentsFrom(json: { elements: OverpassNode[] }, origin: { lat: number; lng: number }, categoryByTag: Map<string, string>): Establishment[] {
@@ -96,35 +119,39 @@ function establishmentsFrom(json: { elements: OverpassNode[] }, origin: { lat: n
   for (const el of json.elements ?? []) {
     const lat = el.lat ?? el.center?.lat
     const lon = el.lon ?? el.center?.lon
-    if (lat == null || lon == null || !el.tags?.name) continue
+    if (lat == null || lon == null) continue
 
-    // Deduplica por nome+coordenadas: o mesmo local pode aparecer em mais de uma categoria
-    // pesquisada, ou como node e way ao mesmo tempo.
-    const dedupeKey = `${el.tags.name.toLowerCase()}-${lat.toFixed(4)}-${lon.toFixed(4)}`
+    const tagKey = el.tags?.shop
+      ? `shop=${el.tags.shop}`
+      : el.tags?.craft
+        ? `craft=${el.tags.craft}`
+        : el.tags?.office
+          ? `office=${el.tags.office}`
+          : el.tags?.amenity
+            ? `amenity=${el.tags.amenity}`
+            : el.tags?.man_made
+              ? `man_made=${el.tags.man_made}`
+              : ''
+    const categoria = categoryByTag.get(tagKey) ?? 'Estabelecimento'
+    // Muitos estabelecimentos pequenos aparecem no OpenStreetMap com a categoria certa mas sem o
+    // campo "nome" preenchido — mostramos mesmo assim (com a categoria como nome) em vez de
+    // descartar um cliente real só porque falta esse dado no mapa.
+    const nome = el.tags?.name ?? categoria
+
+    // Deduplica por nome+coordenadas: o mesmo local pode aparecer como node e way ao mesmo tempo.
+    const dedupeKey = `${nome.toLowerCase()}-${lat.toFixed(4)}-${lon.toFixed(4)}`
     if (seen.has(dedupeKey)) continue
     seen.add(dedupeKey)
 
-    const tagKey = el.tags.shop
-      ? `shop=${el.tags.shop}`
-      : el.tags.craft
-        ? `craft=${el.tags.craft}`
-        : el.tags.office
-          ? `office=${el.tags.office}`
-          : el.tags.amenity
-            ? `amenity=${el.tags.amenity}`
-            : el.tags.man_made
-              ? `man_made=${el.tags.man_made}`
-              : ''
-
     results.push({
       id: `${el.type}/${el.id}`,
-      nome: el.tags.name,
-      endereco: formatAddress(el.tags),
+      nome,
+      endereco: formatAddress(el.tags ?? {}),
       lat,
       lng: lon,
-      telefone: el.tags.phone ?? el.tags['contact:phone'],
-      categoria: categoryByTag.get(tagKey) ?? 'Estabelecimento',
-      horario: el.tags.opening_hours,
+      telefone: el.tags?.phone ?? el.tags?.['contact:phone'],
+      categoria,
+      horario: el.tags?.opening_hours,
       distanciaKm: Math.round(haversineKm(origin, { lat, lng: lon }) * 10) / 10,
     })
   }
