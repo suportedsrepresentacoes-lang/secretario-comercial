@@ -10,7 +10,7 @@ import { Button } from '../components/ui/Button'
 import { LocationButtons } from '../components/ui/LocationButtons'
 import { getCurrentPosition } from '../services/geolocation'
 import { searchAddress, addressAt, type AddressMatch } from '../services/geocoding'
-import { searchGooglePlaces, hasGooglePlacesKey } from '../services/googlePlaces'
+import { searchGooglePlaces, hasGooglePlacesKey, type TermDebugInfo } from '../services/googlePlaces'
 import { openNavigation } from '../services/navigation'
 import { openStreetView } from '../services/streetView'
 import { searchSegments, customSegment } from '../data/segments'
@@ -65,6 +65,7 @@ export default function Buscar() {
   const [searchError, setSearchError] = useState<string | null>(null)
   const [results, setResults] = useState<Establishment[]>([])
   const [partialResults, setPartialResults] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<TermDebugInfo[]>([])
   const [savedAsClient, setSavedAsClient] = useState<Set<string>>(new Set())
   const abortRef = useRef<AbortController | null>(null)
 
@@ -135,17 +136,21 @@ export default function Buscar() {
     setSlowSearch(false)
     setSearchError(null)
     setPartialResults(false)
+    setDebugInfo([])
     const slowTimer = setTimeout(() => setSlowSearch(true), 4000)
     try {
-      const { results: found, partial } = await searchGooglePlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
+      const { results: found, partial, debug } = await searchGooglePlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
       if (controller.signal.aborted) return
       setResults(found)
       setSearchedRadiusKm(atRadiusKm)
       setPartialResults(partial)
+      setDebugInfo(debug)
       if (found.length === 0) setSearchError('Nenhum estabelecimento encontrado nessa região. Tente aumentar o raio ou escolher outros segmentos.')
     } catch (err) {
       if (controller.signal.aborted) return
       setSearchError(err instanceof Error ? err.message : 'Falha ao buscar estabelecimentos. Tente novamente.')
+      const debug = (err as { debug?: TermDebugInfo[] })?.debug
+      if (debug) setDebugInfo(debug)
     } finally {
       if (!controller.signal.aborted) {
         clearTimeout(slowTimer)
@@ -396,6 +401,19 @@ export default function Buscar() {
                 <AlertCircle size={13} className="mt-0.5 shrink-0" />
                 <span className="flex-1">Algumas categorias não responderam — os resultados abaixo podem estar incompletos. <button onClick={() => runSearch(searchedRadiusKm ?? radiusKm)} className="font-medium text-[#3B82F6] underline decoration-dotted">tentar de novo</button></span>
               </div>
+            )}
+            {!searching && results.length === 0 && debugInfo.length > 0 && (
+              <details className="border-b border-[#E1EDFB] px-4 py-3 text-[11px] text-[#6B7F93]">
+                <summary className="cursor-pointer font-medium text-[#33495E]">Detalhes técnicos (mande um print disso se precisar de ajuda)</summary>
+                <div className="mt-2 space-y-2">
+                  {debugInfo.map((d, i) => (
+                    <div key={i} className="mono rounded-[6px] bg-[#F2F7FD] p-2">
+                      <div className="font-semibold text-[#0F2A44]">"{d.term}" — status HTTP {d.status}</div>
+                      <div className="mt-1 whitespace-pre-wrap break-all">{d.body || '(resposta vazia)'}</div>
+                    </div>
+                  ))}
+                </div>
+              </details>
             )}
             <div className="max-h-[420px] divide-y divide-[#E1EDFB] overflow-y-auto">
               {results.map((r) => {
