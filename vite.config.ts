@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'Secretário Comercial',
-        short_name: 'Sec. Comercial',
-        description: 'O copiloto do representante na rua: geolocalização, prospecção por segmento, roteirização, Street View, navegação, registro de visitas e controle de combustível e despesas.',
+        name: 'CampoVista',
+        short_name: 'CampoVista',
+        description: 'O copiloto do representante em campo: geolocalização, prospecção por segmento, roteirização, Street View, navegação, registro de visitas e controle de combustível e despesas.',
         theme_color: '#3B82F6',
         background_color: '#FFFFFF',
         display: 'standalone',

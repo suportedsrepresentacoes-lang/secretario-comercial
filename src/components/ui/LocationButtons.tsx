@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Navigation, Camera } from 'lucide-react'
-import { Button } from './Field'
+import { Button } from './Button'
 import { openStreetView } from '../../services/streetView'
 import { openNavigation } from '../../services/navigation'
 
-export default function LocationActions({
+export function LocationButtons({
   lat,
   lng,
   size = 'md',
@@ -16,6 +16,7 @@ export default function LocationActions({
   className?: string
 }) {
   const [notice, setNotice] = useState<string | null>(null)
+  const pad = size === 'sm' ? 'px-2.5 py-1.5 text-[12px]' : ''
 
   function handleNavigate() {
     const res = openNavigation(lat, lng)
@@ -27,8 +28,6 @@ export default function LocationActions({
     setNotice(res.ok ? null : res.message ?? null)
   }
 
-  const pad = size === 'sm' ? 'px-2.5 py-1.5 text-[12px]' : ''
-
   return (
     <div className={className}>
       <div className="flex gap-2">
@@ -39,7 +38,7 @@ export default function LocationActions({
           <Camera size={13} /> Street View
         </Button>
       </div>
-      {notice && <p className="mt-1.5 text-[11px] text-[#D97706]">{notice}</p>}
+      {notice && <p className="mt-1.5 text-[11px] text-[#F59E0B]">{notice}</p>}
     </div>
   )
 }

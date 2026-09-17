@@ -1,11 +1,12 @@
-export interface GeocodeResult {
+// Geocodificação via Nominatim (OpenStreetMap) — gratuita, sem chave de API.
+
+export interface AddressMatch {
   label: string
   lat: number
   lng: number
 }
 
-// Geocodificação de endereço via Nominatim (OpenStreetMap), gratuita e sem chave.
-export async function geocodeAddress(query: string, signal?: AbortSignal): Promise<GeocodeResult[]> {
+export async function searchAddress(query: string, signal?: AbortSignal): Promise<AddressMatch[]> {
   const q = query.trim()
   if (q.length < 3) return []
   const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&countrycodes=br&q=${encodeURIComponent(q)}`
@@ -15,7 +16,7 @@ export async function geocodeAddress(query: string, signal?: AbortSignal): Promi
   return json.map((r) => ({ label: r.display_name, lat: parseFloat(r.lat), lng: parseFloat(r.lon) }))
 }
 
-export async function reverseGeocode(lat: number, lng: number, signal?: AbortSignal): Promise<string | null> {
+export async function addressAt(lat: number, lng: number, signal?: AbortSignal): Promise<string | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
     const res = await fetch(url, { signal, headers: { Accept: 'application/json' } })
@@ -27,8 +28,8 @@ export async function reverseGeocode(lat: number, lng: number, signal?: AbortSig
   }
 }
 
-// Versão curta (bairro/cidade) usada na Home, ao invés do endereço completo.
-export async function reverseGeocodeCity(lat: number, lng: number, signal?: AbortSignal): Promise<string | null> {
+// Versão curta (cidade/bairro), usada na Home em vez do endereço completo.
+export async function cityAt(lat: number, lng: number, signal?: AbortSignal): Promise<string | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&zoom=12`
     const res = await fetch(url, { signal, headers: { Accept: 'application/json' } })

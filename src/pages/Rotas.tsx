@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
 import L from 'leaflet'
@@ -7,38 +7,47 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-p
 import {
   Plus, Trash2, GripVertical, Wand2, Play, Flag, LocateFixed, Search,
   Gauge, Clock, Fuel, Pencil, X, Check, MinusCircle, Route as RouteEmptyIcon, Compass,
-  Smartphone, List, PartyPopper,
+  Smartphone, List, PartyPopper, Star,
 } from 'lucide-react'
-import { useAppStore } from '../store/useAppStore'
-import Card from '../components/ui/Card'
-import { Button, Input, Textarea } from '../components/ui/Field'
-import LocationActions from '../components/ui/LocationActions'
-import { getCurrentLocation } from '../lib/geolocation'
-import { currency, formatDateTime } from '../lib/date'
-import { VISIT_RESULTADO_LABEL } from '../lib/ui'
+import { useAppStore } from '../store/appStore'
+import { Card } from '../components/ui/Card'
+import { Button } from '../components/ui/Button'
+import { Input, Textarea } from '../components/ui/Field'
+import { LocationButtons } from '../components/ui/LocationButtons'
+import { getCurrentPosition } from '../services/geolocation'
+import { currency, formatDateTime } from '../lib/format'
+import { STOP_STATUS_COLOR, STOP_STATUS_LABEL, VISIT_RESULTADO_LABEL, stopStatusForResultado } from '../lib/labels'
 import { HOME_BASE } from '../data/seed'
-import type { RouteStop, StopStatus, Client, VisitResultado } from '../types'
+import type { RouteStop, Client, DraftStop, VisitResultado } from '../types'
 
-const STOP_STATUS_META: Record<StopStatus, { label: string; color: string }> = {
-  pendente: { label: 'Pendente', color: '#6B7F93' },
-  visitado: { label: 'Visitado', color: '#16A34A' },
-  nao_visitado: { label: 'Não visitado', color: '#EF4444' },
+function numberIcon(n: number, color: string) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:22px;height:22px;border-radius:9999px;background:${color};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:11px">${n}</div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  })
+}
+const homeIcon = L.divIcon({
+  className: '',
+  html: `<div style="width:18px;height:18px;border-radius:9999px;background:#5B8DEF;border:3px solid #fff;box-shadow:0 0 0 4px #5B8DEF33"></div>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+})
+
+function clientAddress(c: Client): string {
+  const e = c.endereco
+  return [`${e.logradouro}${e.numero ? `, ${e.numero}` : ''}`, e.bairro, `${e.cidade}/${e.uf}`].filter(Boolean).join(' — ')
 }
 
-const NEGATIVE_RESULTADOS: VisitResultado[] = ['nao_atendido', 'cliente_nao_encontrado']
-function statusForResultado(r: VisitResultado): StopStatus {
-  return NEGATIVE_RESULTADOS.includes(r) ? 'nao_visitado' : 'visitado'
+function clientToStop(c: Client): DraftStop {
+  return { id: c.id, origem: 'cliente', clientId: c.id, nome: c.nomeFantasia, endereco: clientAddress(c), lat: c.endereco.lat, lng: c.endereco.lng, telefone: c.telefone, segmento: c.segmento }
 }
 
 type StopStatusPatch = Partial<Pick<RouteStop, 'status' | 'observacao' | 'resultado'>>
 
 function StopVisitCard({
-  routeId,
-  stop,
-  index,
-  big,
-  onStartVisit,
-  onUpdateStatus,
+  routeId, stop, index, big, onStartVisit, onUpdateStatus,
 }: {
   routeId: string
   stop: RouteStop
@@ -55,16 +64,16 @@ function StopVisitCard({
 
   function finalize() {
     if (!resultado) return
-    onUpdateStatus(routeId, stop.id, { status: statusForResultado(resultado), resultado, observacao: obs })
+    onUpdateStatus(routeId, stop.id, { status: stopStatusForResultado(resultado), resultado, observacao: obs })
     setEditing(false)
   }
 
   return (
-    <div className={`rounded-[6px] border border-[#CFE0F5] bg-[#EAF3FC] ${big ? 'p-5' : 'p-3'}`}>
+    <div className={`rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] ${big ? 'p-5' : 'p-3'}`}>
       <div className="flex items-center gap-2.5">
         <span
-          className={`mono flex shrink-0 items-center justify-center rounded-full font-bold text-[#FFFFFF] ${big ? 'h-9 w-9 text-[13px]' : 'h-6 w-6 text-[11px] text-[#0F2A44]'}`}
-          style={{ background: STOP_STATUS_META[stop.status].color, color: big ? '#FFFFFF' : undefined }}
+          className={`mono flex shrink-0 items-center justify-center rounded-full font-bold ${big ? 'h-9 w-9 text-[13px] text-white' : 'h-6 w-6 text-[11px] text-[#0F2A44]'}`}
+          style={{ background: STOP_STATUS_COLOR[stop.status], color: big ? '#FFFFFF' : undefined }}
         >
           {index + 1}
         </span>
@@ -77,39 +86,31 @@ function StopVisitCard({
         )}
       </div>
 
-      <LocationActions lat={stop.lat} lng={stop.lng} size={big ? 'md' : 'sm'} className="mt-3" />
+      <LocationButtons lat={stop.lat} lng={stop.lng} size={big ? 'md' : 'sm'} className="mt-3" />
 
       {editing ? (
         <div className="mt-3 space-y-2">
           {!started ? (
-            <Button className="w-full" onClick={() => onStartVisit(routeId, stop.id)}>
-              <Play size={13} /> Iniciar visita
-            </Button>
+            <Button className="w-full" onClick={() => onStartVisit(routeId, stop.id)}><Play size={13} /> Iniciar visita</Button>
           ) : (
             <>
               <div className="text-[11px] font-medium text-[#6B7F93]">Resultado da visita</div>
               <div className="flex flex-wrap gap-1.5">
                 {(Object.keys(VISIT_RESULTADO_LABEL) as VisitResultado[]).map((rOpt) => (
-                  <button
-                    key={rOpt}
-                    onClick={() => setResultado(rOpt)}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] ${resultado === rOpt ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]' : 'border-[#CFE0F5] text-[#6B7F93]'}`}
-                  >
+                  <button key={rOpt} onClick={() => setResultado(rOpt)} className={`rounded-full border px-2.5 py-1 text-[11px] ${resultado === rOpt ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]' : 'border-[#CFE0F5] text-[#6B7F93]'}`}>
                     {VISIT_RESULTADO_LABEL[rOpt]}
                   </button>
                 ))}
               </div>
               <Textarea rows={2} placeholder="Observações da visita (opcional)" value={obs} onChange={(e) => setObs(e.target.value)} />
-              <Button className="w-full" disabled={!resultado} onClick={finalize}>
-                <Flag size={13} /> Finalizar visita
-              </Button>
+              <Button className="w-full" disabled={!resultado} onClick={finalize}><Flag size={13} /> Finalizar visita</Button>
             </>
           )}
         </div>
       ) : (
-        <div className="mt-2.5 flex items-center justify-between rounded-[6px] bg-[#FFFFFF] px-3 py-2 text-[11.5px]">
-          <span className="font-medium" style={{ color: STOP_STATUS_META[stop.status].color }}>
-            {stop.resultado ? VISIT_RESULTADO_LABEL[stop.resultado] : STOP_STATUS_META[stop.status].label}
+        <div className="mt-2.5 flex items-center justify-between rounded-[8px] bg-white px-3 py-2 text-[11.5px]">
+          <span className="font-medium" style={{ color: STOP_STATUS_COLOR[stop.status] }}>
+            {stop.resultado ? VISIT_RESULTADO_LABEL[stop.resultado] : STOP_STATUS_LABEL[stop.status]}
           </span>
         </div>
       )}
@@ -118,47 +119,12 @@ function StopVisitCard({
   )
 }
 
-function numberIcon(n: number, color: string) {
-  return L.divIcon({
-    className: '',
-    html: `<div style="width:22px;height:22px;border-radius:9999px;background:${color};border:2px solid #FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#FFFFFF;font-weight:800;font-size:11px">${n}</div>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-  })
-}
-const homeIcon = L.divIcon({
-  className: '',
-  html: `<div style="width:18px;height:18px;border-radius:9999px;background:#5B8DEF;border:3px solid #FFFFFF;box-shadow:0 0 0 4px #5B8DEF33"></div>`,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-})
-
-function clientAddress(c: Client): string {
-  const e = c.endereco
-  return [`${e.logradouro}${e.numero ? `, ${e.numero}` : ''}`, e.bairro, `${e.cidade}/${e.uf}`].filter(Boolean).join(' — ')
-}
-
-function clientToStop(c: Client): Omit<RouteStop, 'status'> {
-  return {
-    id: c.id,
-    origem: 'cliente',
-    clientId: c.id,
-    nome: c.nomeFantasia ?? c.razaoSocial,
-    endereco: clientAddress(c),
-    lat: c.endereco.lat,
-    lng: c.endereco.lng,
-    telefone: c.contatos[0]?.telefone,
-    whatsapp: c.contatos[0]?.whatsapp,
-    segmento: c.segmento,
-  }
-}
-
 export default function Rotas() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const {
-    routes, clients, draftOrigin, draftStops,
-    setDraftOrigin, toggleDraftStop, removeDraftStop, clearDraft,
+    routes, clients, draftOrigin, draftStops, favorites,
+    setDraftOrigin, toggleDraftStop, removeDraftStop, clearDraft, addFavorite,
     createRoute, optimizeRoute, reorderRouteStops, removeStopFromRoute,
     updateRouteFuel, startRoute, startStopVisit, updateStopStatus, finishRoute, deleteRoute, renameRoute,
   } = useAppStore()
@@ -170,26 +136,24 @@ export default function Rotas() {
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [modoCampo, setModoCampo] = useState(false)
+  const [kmRealInput, setKmRealInput] = useState('')
 
   const routeId = params.get('id')
   const active = routes.filter((r) => r.status === 'em_andamento')
-  // Sem ?id na URL, mostra automaticamente a rota em andamento (se houver) — essa aba é o "agora".
   const selectedRoute = routes.find((r) => r.id === routeId) ?? (!routeId ? active[0] : undefined)
 
   const matchingClients = useMemo(() => {
     if (!clientQuery.trim()) return []
     const q = clientQuery.toLowerCase()
     const draftIds = new Set(draftStops.map((p) => p.id))
-    return clients
-      .filter((c) => !draftIds.has(c.id) && (c.nomeFantasia ?? c.razaoSocial).toLowerCase().includes(q))
-      .slice(0, 6)
+    return clients.filter((c) => !draftIds.has(c.id) && c.nomeFantasia.toLowerCase().includes(q)).slice(0, 6)
   }, [clientQuery, clients, draftStops])
 
   async function handleLocate() {
     setLocating(true)
     setLocationError(null)
     try {
-      const pos = await getCurrentLocation()
+      const pos = await getCurrentPosition()
       setDraftOrigin({ lat: pos.lat, lng: pos.lng })
     } catch (err) {
       setLocationError(err instanceof Error ? err.message : 'Não foi possível obter sua localização.')
@@ -201,12 +165,7 @@ export default function Rotas() {
   function handleCreateRoute() {
     if (draftStops.length === 0) return
     const origin = draftOrigin ?? { lat: HOME_BASE.lat, lng: HOME_BASE.lng }
-    const route = createRoute({
-      nome: routeName.trim() || 'Rota de hoje',
-      origemLat: origin.lat,
-      origemLng: origin.lng,
-      paradas: draftStops,
-    })
+    const route = createRoute({ nome: routeName.trim() || 'Rota de hoje', origemLat: origin.lat, origemLng: origin.lng, paradas: draftStops })
     clearDraft()
     setParams({ id: route.id })
   }
@@ -219,7 +178,12 @@ export default function Rotas() {
     reorderRouteStops(selectedRoute.id, ids)
   }
 
-  // ---------- Detalhe / execução de uma rota ----------
+  function handleFinishRoute(routeId: string) {
+    const km = kmRealInput.trim() === '' ? undefined : Number(kmRealInput)
+    finishRoute(routeId, km)
+    navigate('/historico')
+  }
+
   if (selectedRoute) {
     const r = selectedRoute
     const polyline: [number, number][] = [[r.origemLat, r.origemLng], ...r.paradas.map((p) => [p.lat, p.lng] as [number, number])]
@@ -230,9 +194,7 @@ export default function Rotas() {
 
     return (
       <>
-        <button onClick={() => navigate('/salvas')} className="mb-3 text-[12.5px] text-[#6B7F93] hover:text-[#33495E]">
-          ← Ver rotas salvas
-        </button>
+        <button onClick={() => navigate('/historico')} className="mb-3 text-[12.5px] text-[#6B7F93] hover:text-[#33495E]">← Ver histórico de rotas</button>
 
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -245,13 +207,11 @@ export default function Rotas() {
             ) : (
               <div className="flex items-center gap-2">
                 <h1 className="text-[20px] font-bold">{r.nome}</h1>
-                {!isDone && (
-                  <button onClick={() => { setNameDraft(r.nome); setEditingName(true) }} className="text-[#6B7F93] hover:text-[#0F2A44]"><Pencil size={14} /></button>
-                )}
+                {!isDone && <button onClick={() => { setNameDraft(r.nome); setEditingName(true) }} className="text-[#6B7F93] hover:text-[#0F2A44]"><Pencil size={14} /></button>}
               </div>
             )}
             <p className="mt-1 text-[13px] text-[#6B7F93]">
-              {r.paradas.length} paradas · {r.distanciaTotalKm} km · ~{Math.round(r.tempoEstimadoMin / 60 * 10) / 10}h
+              {r.paradas.length} paradas · {r.distanciaKm} km · ~{Math.round((r.duracaoMin / 60) * 10) / 10}h
               {isActive && <> · {visitedCount}/{r.paradas.length} registradas</>}
             </p>
           </div>
@@ -267,11 +227,19 @@ export default function Rotas() {
                 <Button variant="secondary" onClick={() => setModoCampo((v) => !v)}>
                   {modoCampo ? <List size={14} /> : <Smartphone size={14} />} {modoCampo ? 'Ver todas as paradas' : 'Modo Campo'}
                 </Button>
-                <Button onClick={() => { finishRoute(r.id); navigate('/salvas') }}><Flag size={14} /> Finalizar rota</Button>
+                <Button onClick={() => handleFinishRoute(r.id)}><Flag size={14} /> Finalizar rota</Button>
               </>
             )}
           </div>
         </div>
+
+        {isActive && (
+          <div className="mb-4 flex items-center gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2.5">
+            <Gauge size={14} className="shrink-0 text-[#6B7F93]" />
+            <span className="shrink-0 text-[12px] text-[#33495E]">Km real percorrido (opcional, ao finalizar)</span>
+            <Input type="number" step="0.1" placeholder={`${r.distanciaKm} km planejados`} value={kmRealInput} onChange={(e) => setKmRealInput(e.target.value)} className="!w-32" />
+          </div>
+        )}
 
         {isActive && modoCampo ? (
           <div className="mx-auto max-w-md">
@@ -280,13 +248,11 @@ export default function Rotas() {
               const nextStop = nextIdx >= 0 ? r.paradas[nextIdx] : null
               if (!nextStop) {
                 return (
-                  <div className="flex flex-col items-center gap-3 rounded-md border border-[#CFE0F5] bg-[#EAF3FC] p-8 text-center">
+                  <div className="flex flex-col items-center gap-3 rounded-xl border border-[#CFE0F5] bg-[#EAF3FC] p-8 text-center">
                     <PartyPopper size={28} className="text-[#16A34A]" />
                     <div className="text-[15px] font-semibold text-[#0F2A44]">Todas as paradas foram registradas!</div>
-                    <p className="text-[12.5px] text-[#6B7F93]">
-                      Você concluiu {visitedCount} de {r.paradas.length} paradas desta rota.
-                    </p>
-                    <Button onClick={() => { finishRoute(r.id); navigate('/salvas') }}><Flag size={14} /> Finalizar rota</Button>
+                    <p className="text-[12.5px] text-[#6B7F93]">Você concluiu {visitedCount} de {r.paradas.length} paradas desta rota.</p>
+                    <Button onClick={() => handleFinishRoute(r.id)}><Flag size={14} /> Finalizar rota</Button>
                   </div>
                 )
               }
@@ -295,15 +261,7 @@ export default function Rotas() {
                   <div className="mb-3 text-center text-[12px] font-medium text-[#6B7F93]">
                     Próxima parada · {nextIdx + 1} de {r.paradas.length} · {visitedCount}/{r.paradas.length} registradas
                   </div>
-                  <StopVisitCard
-                    key={nextStop.id}
-                    routeId={r.id}
-                    stop={nextStop}
-                    index={nextIdx}
-                    big
-                    onStartVisit={startStopVisit}
-                    onUpdateStatus={updateStopStatus}
-                  />
+                  <StopVisitCard key={nextStop.id} routeId={r.id} stop={nextStop} index={nextIdx} big onStartVisit={startStopVisit} onUpdateStatus={updateStopStatus} />
                 </>
               )
             })()}
@@ -311,14 +269,12 @@ export default function Rotas() {
         ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
           <div className="flex flex-col gap-4">
-            <div className="h-[300px] overflow-hidden rounded-md border border-[#CFE0F5]">
+            <div className="h-[300px] overflow-hidden rounded-xl border border-[#CFE0F5]">
               <MapContainer center={[r.origemLat, r.origemLng]} zoom={12} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
                 <Marker position={[r.origemLat, r.origemLng]} icon={homeIcon}><Popup>Ponto de partida</Popup></Marker>
                 {r.paradas.map((p, idx) => (
-                  <Marker key={p.id} position={[p.lat, p.lng]} icon={numberIcon(idx + 1, STOP_STATUS_META[p.status].color)}>
-                    <Popup>{idx + 1}. {p.nome}</Popup>
-                  </Marker>
+                  <Marker key={p.id} position={[p.lat, p.lng]} icon={numberIcon(idx + 1, STOP_STATUS_COLOR[p.status])}><Popup>{idx + 1}. {p.nome}</Popup></Marker>
                 ))}
                 <Polyline positions={polyline} pathOptions={{ color: '#3B82F6', weight: 3, opacity: 0.75, dashArray: '6 6' }} />
               </MapContainer>
@@ -333,13 +289,9 @@ export default function Rotas() {
                         {r.paradas.map((p, idx) => (
                           <Draggable draggableId={p.id} index={idx} key={p.id}>
                             {(dragProvided) => (
-                              <div
-                                ref={dragProvided.innerRef}
-                                {...dragProvided.draggableProps}
-                                className="flex items-center gap-2 rounded-[6px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2.5"
-                              >
+                              <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} className="flex items-center gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2.5">
                                 <span {...dragProvided.dragHandleProps} className="text-[#93A5BC]"><GripVertical size={15} /></span>
-                                <span className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3B82F6] text-[11px] font-bold text-[#0F2A44]">{idx + 1}</span>
+                                <span className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3B82F6] text-[11px] font-bold text-white">{idx + 1}</span>
                                 <div className="min-w-0 flex-1">
                                   <div className="truncate text-[13px] text-[#0F2A44]">{p.nome}</div>
                                   <div className="truncate text-[11px] text-[#6B7F93]">{p.endereco}</div>
@@ -357,28 +309,21 @@ export default function Rotas() {
               ) : isActive ? (
                 <div className="space-y-2">
                   {r.paradas.map((p, idx) => (
-                    <StopVisitCard
-                      key={p.id}
-                      routeId={r.id}
-                      stop={p}
-                      index={idx}
-                      onStartVisit={startStopVisit}
-                      onUpdateStatus={updateStopStatus}
-                    />
+                    <StopVisitCard key={p.id} routeId={r.id} stop={p} index={idx} onStartVisit={startStopVisit} onUpdateStatus={updateStopStatus} />
                   ))}
                 </div>
               ) : (
                 <div className="space-y-2">
                   {r.paradas.map((p, idx) => (
-                    <div key={p.id} className="rounded-[6px] border border-[#CFE0F5] bg-[#EAF3FC] p-3">
+                    <div key={p.id} className="rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] p-3">
                       <div className="flex items-center gap-2">
-                        <span className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-[#0F2A44]" style={{ background: STOP_STATUS_META[p.status].color }}>{idx + 1}</span>
+                        <span className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-[#0F2A44]" style={{ background: STOP_STATUS_COLOR[p.status] }}>{idx + 1}</span>
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[13px] text-[#0F2A44]">{p.nome}</div>
                           <div className="truncate text-[11px] text-[#6B7F93]">{p.endereco}</div>
                         </div>
-                        <span className="shrink-0 text-[11px] font-medium" style={{ color: STOP_STATUS_META[p.status].color }}>
-                          {p.resultado ? VISIT_RESULTADO_LABEL[p.resultado] : STOP_STATUS_META[p.status].label}
+                        <span className="shrink-0 text-[11px] font-medium" style={{ color: STOP_STATUS_COLOR[p.status] }}>
+                          {p.resultado ? VISIT_RESULTADO_LABEL[p.resultado] : STOP_STATUS_LABEL[p.status]}
                         </span>
                       </div>
                       {p.observacao && <p className="mt-2 text-[11.5px] text-[#6B7F93]">{p.observacao}</p>}
@@ -392,38 +337,34 @@ export default function Rotas() {
           <div className="flex flex-col gap-4">
             <Card title="Resumo">
               <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="rounded-[6px] border border-[#CFE0F5] bg-[#EAF3FC] py-3">
+                <div className="rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] py-3">
                   <Gauge size={15} className="mx-auto mb-1 text-[#16A34A]" />
-                  <div className="text-[15px] font-semibold">{r.distanciaTotalKm} km</div>
+                  <div className="text-[15px] font-semibold">{r.distanciaKm} km</div>
                   <div className="text-[10.5px] text-[#6B7F93]">distância total</div>
                 </div>
-                <div className="rounded-[6px] border border-[#CFE0F5] bg-[#EAF3FC] py-3">
+                <div className="rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] py-3">
                   <Clock size={15} className="mx-auto mb-1 text-[#3B82F6]" />
-                  <div className="text-[15px] font-semibold">{Math.round((r.tempoEstimadoMin / 60) * 10) / 10}h</div>
+                  <div className="text-[15px] font-semibold">{Math.round((r.duracaoMin / 60) * 10) / 10}h</div>
                   <div className="text-[10.5px] text-[#6B7F93]">tempo estimado</div>
                 </div>
               </div>
+              {r.kmRealPercorrido != null && (
+                <div className="mt-3 flex items-center justify-between border-t border-[#E1EDFB] pt-3 text-[12.5px]">
+                  <span className="text-[#6B7F93]">Km real percorrido</span>
+                  <span className="mono font-medium text-[#0F2A44]">{r.kmRealPercorrido} km</span>
+                </div>
+              )}
             </Card>
 
             <Card title={<span className="flex items-center gap-1.5 text-[13px] font-medium text-[#33495E]"><Fuel size={14} /> Combustível</span>}>
               <div className="mb-3 grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-[11.5px] text-[#6B7F93]">Consumo (km/L)</label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={r.combustivel.consumoKmL}
-                    onChange={(e) => updateRouteFuel(r.id, { consumoKmL: e.target.value === '' ? 0 : Number(e.target.value) })}
-                  />
+                  <Input type="number" step="0.1" value={r.combustivel.consumoKmL} onChange={(e) => updateRouteFuel(r.id, { consumoKmL: e.target.value === '' ? 0 : Number(e.target.value) })} />
                 </div>
                 <div>
                   <label className="mb-1 block text-[11.5px] text-[#6B7F93]">Preço (R$/L)</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={r.combustivel.precoLitro}
-                    onChange={(e) => updateRouteFuel(r.id, { precoLitro: e.target.value === '' ? 0 : Number(e.target.value) })}
-                  />
+                  <Input type="number" step="0.01" value={r.combustivel.precoLitro} onChange={(e) => updateRouteFuel(r.id, { precoLitro: e.target.value === '' ? 0 : Number(e.target.value) })} />
                 </div>
               </div>
               <div className="flex items-center justify-between border-t border-[#E1EDFB] pt-3 text-[13px]">
@@ -455,21 +396,16 @@ export default function Rotas() {
     )
   }
 
-  // ---------- Sem rota em andamento: construtor (se há rascunho) ou estado vazio ----------
   if (draftStops.length === 0) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-20 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EAF3FC] text-[#3B82F6]">
-          <RouteEmptyIcon size={28} />
-        </div>
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EAF3FC] text-[#3B82F6]"><RouteEmptyIcon size={28} /></div>
         <h1 className="text-[18px] font-bold">Seu roteiro está vazio</h1>
         <p className="text-[13.5px] text-[#6B7F93]">
           Nenhuma parada foi selecionada ainda. Vá até <strong>Buscar</strong>, defina sua localização e segmentos, e clique em{' '}
           <strong>"+ Adicionar à Rota"</strong> nos estabelecimentos e clientes que deseja visitar.
         </p>
-        <Button onClick={() => navigate('/buscar')}>
-          <Compass size={14} /> Ir para Buscar
-        </Button>
+        <Button onClick={() => navigate('/buscar')}><Compass size={14} /> Ir para Buscar</Button>
       </div>
     )
   }
@@ -485,14 +421,24 @@ export default function Rotas() {
         <div className="mb-4">
           <label className="mb-1.5 block text-[12px] font-medium text-[#6B7F93]">Ponto de partida</label>
           {draftOrigin ? (
-            <div className="flex items-center justify-between gap-2 rounded-[6px] border border-[#16A34A]/30 bg-[#16A34A]/10 px-3 py-2 text-[12.5px] text-[#16A34A]">
+            <div className="flex items-center justify-between gap-2 rounded-[8px] border border-[#16A34A]/30 bg-[#16A34A]/10 px-3 py-2 text-[12.5px] text-[#16A34A]">
               <span className="flex items-center gap-1.5"><LocateFixed size={14} /> Você está aqui</span>
-              <button onClick={handleLocate} className="text-[11px] underline decoration-dotted">atualizar</button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { const nome = prompt('Nome deste local (ex: Casa, Escritório)'); if (nome) addFavorite({ nome, lat: draftOrigin.lat, lng: draftOrigin.lng }) }} className="flex items-center gap-1 text-[11px] underline decoration-dotted"><Star size={11} /> salvar</button>
+                <button onClick={handleLocate} className="text-[11px] underline decoration-dotted">atualizar</button>
+              </div>
             </div>
           ) : (
             <Button variant="secondary" className="w-full" onClick={handleLocate} disabled={locating}>
               <LocateFixed size={14} /> {locating ? 'Localizando…' : 'Usar minha localização atual'}
             </Button>
+          )}
+          {favorites.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {favorites.map((f) => (
+                <button key={f.id} onClick={() => setDraftOrigin({ lat: f.lat, lng: f.lng })} className="rounded-full border border-[#CFE0F5] bg-[#EAF3FC] px-2.5 py-1 text-[11px] text-[#33495E] hover:bg-[#DCEAFB]">{f.nome}</button>
+              ))}
+            </div>
           )}
           {locationError && <p className="mt-1.5 text-[11px] text-[#EF4444]">{locationError}</p>}
           {!draftOrigin && <p className="mt-1.5 text-[11px] text-[#6B7F93]">Sem localização definida, a rota usa um ponto de partida padrão.</p>}
@@ -502,7 +448,7 @@ export default function Rotas() {
           <label className="mb-1.5 block text-[12px] font-medium text-[#6B7F93]">Paradas selecionadas ({draftStops.length})</label>
           <div className="space-y-1.5">
             {draftStops.map((p) => (
-              <div key={p.id} className="flex items-center justify-between gap-2 rounded-[6px] border border-[#CFE0F5] bg-[#EAF3FC] px-2.5 py-2">
+              <div key={p.id} className="flex items-center justify-between gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-2.5 py-2">
                 <div className="min-w-0">
                   <div className="truncate text-[12.5px] text-[#0F2A44]">{p.nome}</div>
                   <div className="truncate text-[10.5px] text-[#6B7F93]">{p.origem === 'cliente' ? 'cliente cadastrado' : 'prospecção'}</div>
@@ -516,25 +462,15 @@ export default function Rotas() {
         <div className="mb-4">
           <label className="mb-1.5 block text-[12px] font-medium text-[#6B7F93]">Adicionar cliente cadastrado</label>
           <div className="relative">
-            <div className="flex items-center gap-2 rounded-[6px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2 text-[13px] text-[#6B7F93]">
+            <div className="flex items-center gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2 text-[13px] text-[#6B7F93]">
               <Search size={14} />
-              <input
-                value={clientQuery}
-                onChange={(e) => setClientQuery(e.target.value)}
-                placeholder="Buscar por nome…"
-                className="w-full bg-transparent text-[#0F2A44] outline-none placeholder:text-[#6B7F93]"
-              />
+              <input value={clientQuery} onChange={(e) => setClientQuery(e.target.value)} placeholder="Buscar por nome…" className="w-full bg-transparent text-[#0F2A44] outline-none placeholder:text-[#6B7F93]" />
             </div>
             {matchingClients.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-[6px] border border-[#CFE0F5] bg-[#FFFFFF] shadow-xl">
+              <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-[8px] border border-[#CFE0F5] bg-white shadow-xl">
                 {matchingClients.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => { toggleDraftStop(clientToStop(c)); setClientQuery('') }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] hover:bg-[#DCEAFB]"
-                  >
-                    <Plus size={13} className="text-[#3B82F6]" />
-                    {c.nomeFantasia ?? c.razaoSocial}
+                  <button key={c.id} onClick={() => { toggleDraftStop(clientToStop(c)); setClientQuery('') }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] hover:bg-[#DCEAFB]">
+                    <Plus size={13} className="text-[#3B82F6]" /> {c.nomeFantasia}
                   </button>
                 ))}
               </div>

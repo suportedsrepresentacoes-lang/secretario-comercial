@@ -1,44 +1,57 @@
-# Secretário Comercial
+# CampoVista
 
-O **copiloto do representante na rua**: geolocalização, prospecção por segmento, roteirização, Street View, navegação, registro de visitas e controle de combustível/despesas — para quem visita empresas e clientes presencialmente, em qualquer segmento B2B (materiais de construção, autopeças, agro, farmácias, distribuidoras, etc).
+O **copiloto do representante em campo**: geolocalização, prospecção por segmento, roteirização, Street View, navegação, registro de visitas e controle de combustível/despesas — para quem visita empresas e clientes presencialmente, em qualquer segmento B2B (materiais de construção, autopeças, agro, farmácias, distribuidoras, etc).
 
 > Planeje sua rota. Encontre oportunidades. Visite mais clientes. Gaste menos.
 
-Fluxo principal: **Início (resumo do dia) → Minha localização → Segmento → Buscar estabelecimentos → Ver fachada (Street View) → Selecionar → Adicionar clientes/prospects → Criar rota → Otimizar → Iniciar rota → Navegar até cada parada → Registrar visita → Finalizar → Histórico e custos.**
+Fluxo principal: **Início (resumo do dia) → Minha localização → Segmento → Buscar estabelecimentos → Ver fachada (Street View) → Selecionar → Adicionar clientes/prospects → Criar rota → Otimizar → Iniciar rota → Navegar até cada parada → Registrar visita → Finalizar → Histórico, despesas e relatório do dia.**
 
 ## Identidade
 
 Interface **azul-claro + branco**, mobile-first, com poucas cores adicionais e função visual clara: azul para ações principais, verde para concluído, âmbar para atenção e vermelho para problema/cancelamento.
 
-## Stack
+## Stack e arquitetura
 
 - React 19 + TypeScript + Vite
-- Tailwind CSS v4
-- Zustand (estado global, persistido em `localStorage`)
+- Tailwind CSS v4 (tokens de cor em `src/index.css`)
+- Zustand (estado global único, persistido em `localStorage`)
 - React Router (navegação por hash)
 - React Leaflet + OpenStreetMap (mapa e rotas, sem chave de API)
-- Overpass API / OpenStreetMap (busca real de estabelecimentos por segmento, sem chave de API — a cobertura depende do quanto a região está mapeada no OSM)
-- Serviços próprios `src/services/streetView.ts` e `src/services/navigation.ts` — abrem o Google Maps (Street View e navegação turn-by-turn) ou o Waze usando apenas latitude/longitude, sem depender de nenhuma API paga
+- Overpass API / OpenStreetMap (busca real de estabelecimentos por segmento — a cobertura depende do quanto a região está mapeada no OSM)
 - @hello-pangea/dnd (reordenar paradas da rota)
 - vite-plugin-pwa (aplicativo instalável / offline)
 
-Os dados ficam salvos no navegador via `localStorage` (protótipo sem backend — cada dispositivo tem sua própria base). A arquitetura já está organizada em camadas (`components/`, `pages/`, `services/`, `lib/`, `store/`) para facilitar uma futura integração com backend/autenticação.
+Arquitetura modular, separando claramente cada responsabilidade:
 
-## Módulos ativos (MVP)
+```
+src/
+  types/        modelo de dados (cliente, rota, despesa, veículo, prospecção)
+  services/     geolocalização, geocodificação, busca de lugares (Overpass),
+                roteirização/otimização, Street View, navegação — cada um
+                isolado e reutilizável, sem depender de nenhuma API paga
+  store/        estado global (Zustand), persistido no dispositivo
+  data/         segmentos de prospecção e dados de demonstração
+  lib/          formatação e rótulos/cores compartilhados
+  components/   layout (topo/navegação) e UI genérica (botão, card, sheet…)
+  pages/        cada tela do produto
+```
+
+Os dados ficam salvos no navegador via `localStorage` — protótipo sem backend, cada dispositivo tem sua própria base. A separação em camadas acima facilita trocar essa persistência por um backend/autenticação no futuro sem reescrever as telas.
+
+## Módulos
 
 - **Início** — saudação, resumo da operação do dia (visitas planejadas, km, combustível estimado, prospects próximos) e clientes próximos por geolocalização.
-- **Buscar** — geolocalização, prospecção por segmento (com categorias predefinidas e segmento personalizado) e mapa com Street View e navegação por marcador.
-- **Rota** — construção e otimização de rota (nearest-neighbor + 2-opt), edição de paradas, execução com **Modo Campo** (tela simplificada mostrando só a próxima parada), registro de visita com resultado estruturado (venda realizada, pedido em negociação, proposta enviada, retornar, sem interesse, não atendido, cliente não encontrado, outro) e cálculo de combustível.
-- **Salvas** — rotas em andamento, planejadas e concluídas, com totais de distância e combustível.
-- **Clientes** — cadastro rápido (inclusive a partir de um prospect encontrado na busca), histórico de visitas e ações de rota/navegação/Street View.
+- **Buscar** — geolocalização, prospecção por segmento (categorias predefinidas + segmento personalizado) e mapa com Street View e navegação por marcador.
+- **Rotas** — construção e otimização de rota (nearest-neighbor + 2-opt), edição de paradas, execução com **Modo Campo** (tela simplificada mostrando só a próxima parada), registro de visita com resultado estruturado (venda realizada, pedido em negociação, proposta enviada, retornar, sem interesse, não atendido, cliente não encontrado, outro), locais favoritos como ponto de partida (casa/escritório) e cálculo de combustível.
+- **Histórico** — rotas em andamento, planejadas e concluídas, com totais de distância e combustível.
+- **Clientes** — cadastro rápido (inclusive a partir de um prospect encontrado na busca), tags/etiquetas, filtro por status e por tag, histórico de visitas e ações de rota/navegação/Street View.
 - **Despesas** — lançamento de gastos de campo (combustível, pedágio, estacionamento, alimentação, hospedagem, outros) com totais por categoria e por mês.
-- **Configurações** — perfil, dados do veículo (tipo de combustível, consumo médio e preço) e exportação/reset de dados.
+- **Relatório** — resumo do dia: visitas realizadas/pendentes/retornos, quilometragem planejada x realizada, combustível estimado x gasto real, custo total da operação, prospects encontrados e clientes cadastrados.
+- **Configurações** — perfil, dados do veículo (tipo de combustível, consumo médio e preço), locais favoritos e exportação/reset de dados.
 
-## Módulos preservados para o futuro
+## Fora do escopo desta primeira versão
 
-O projeto nasceu como um CRM completo. Os módulos abaixo continuam em `src/pages/` (Dashboard, Mapa, Agenda, Visitas, Crm, WhatsApp, IaComercial, FollowUps, Pedidos, Produtos, Industrias, Comissoes, Relatorios) e seus tipos/ações continuam no store (`src/store/useAppStore.ts`), mas **não estão roteados nem visíveis na navegação** desta versão.
-
-Também ficam deliberadamente fora da primeira versão (para não inchar o produto antes da hora): tags/etiquetas de clientes, filtros avançados combinados, alerta automático de proximidade (que exigiria rastreamento contínuo de localização), rotas recorrentes por dia da semana e comparação planejado × realizado de quilometragem. São evoluções naturais do módulo de Rotas/Despesas já existente.
+Para não transformar o produto num ERP/CRM gigantesco antes da hora: filtros combinados avançados (ex. distância + tags + segmento ao mesmo tempo), alerta automático de proximidade (exigiria rastreamento contínuo de localização, evitado de propósito) e rotas recorrentes por dia da semana. São evoluções naturais dos módulos de Clientes/Rotas já existentes.
 
 ## Como rodar
 
