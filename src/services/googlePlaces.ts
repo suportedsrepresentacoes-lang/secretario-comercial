@@ -107,7 +107,7 @@ export async function searchGooglePlaces(
   signal?: AbortSignal,
 ): Promise<GooglePlacesSearchResult> {
   if (!API_KEY) {
-    throw new Error('Chave da API do Google Places não configurada. Peça para configurar o segredo GOOGLE_PLACES_API_KEY no GitHub.')
+    throw new Error('Chave da API do Google Places não configurada. Peça para configurar o segredo VITE_GOOGLE_MAPS_API_KEY no GitHub.')
   }
   if (segments.length === 0) return { results: [], partial: false, debug: [] }
 

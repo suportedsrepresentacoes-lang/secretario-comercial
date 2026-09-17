@@ -320,7 +320,7 @@ export default function Buscar() {
 
           {!hasGooglePlacesKey() && (
             <p className="flex items-start gap-1.5 rounded-[8px] border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-3 py-2 text-[11.5px] text-[#B45309]">
-              <AlertCircle size={13} className="mt-0.5 shrink-0" /> Chave da API do Google Places não configurada. A busca não vai funcionar até o segredo <code className="mono">GOOGLE_PLACES_API_KEY</code> ser adicionado no GitHub.
+              <AlertCircle size={13} className="mt-0.5 shrink-0" /> Chave da API do Google Places não configurada. A busca não vai funcionar até o segredo <code className="mono">VITE_GOOGLE_MAPS_API_KEY</code> ser adicionado no GitHub.
             </p>
           )}
 

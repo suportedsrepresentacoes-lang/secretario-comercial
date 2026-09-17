@@ -17,7 +17,7 @@ Interface **azul-claro + branco**, mobile-first, com poucas cores adicionais e f
 - Zustand (estado global único, persistido em `localStorage`)
 - React Router (navegação por hash)
 - React Leaflet + OpenStreetMap (desenho do mapa e rotas, sem chave de API)
-- Google Places API (Text Search) para a busca de estabelecimentos por segmento — requer uma chave de API própria (variável `VITE_GOOGLE_PLACES_API_KEY`, injetada em build a partir do segredo `GOOGLE_PLACES_API_KEY` no GitHub Actions). Cobertura de comércio muito melhor que dados livres, principalmente em cidades pequenas, ao custo de depender de uma API paga com cota gratuita mensal.
+- Google Places API (Text Search) para a busca de estabelecimentos por segmento — requer uma chave de API própria (variável `VITE_GOOGLE_PLACES_API_KEY`, injetada em build a partir do segredo `VITE_GOOGLE_MAPS_API_KEY` no GitHub Actions). Cobertura de comércio muito melhor que dados livres, principalmente em cidades pequenas, ao custo de depender de uma API paga com cota gratuita mensal.
 - @hello-pangea/dnd (reordenar paradas da rota)
 - vite-plugin-pwa (aplicativo instalável / offline)
 
