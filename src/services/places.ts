@@ -12,15 +12,16 @@ interface OverpassNode {
   tags?: Record<string, string>
 }
 
-// A instância pública principal do Overpass fica sobrecarregada com frequência: tentamos espelhos
-// alternativos em sequência antes de desistir. O espelho que respondeu por último fica "fixado" como
-// primeira tentativa nas próximas buscas, para não perder tempo re-testando instâncias lentas.
+// Os espelhos públicos do Overpass variam muito de latência momento a momento. Em vez de tentar
+// um de cada vez (o que soma os timeouts), disparamos todos em paralelo e usamos o primeiro que
+// responder — muito mais rápido na prática, ao custo de eventualmente aceitar um espelho com
+// menos dados do que outro mais lento traria.
 const MIRRORS = [
   'https://overpass.osm.ch/api/interpreter',
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
 ]
-let fastestMirror = MIRRORS[0]
+const MIRROR_TIMEOUT_MS = 8000
 
 function escapeRegex(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\"]/g, '\\$&')
@@ -44,7 +45,7 @@ function buildQuery(tags: { key: string; value: string }[], freeText: string[], 
       )
     })
     .join('')
-  return `[out:json][timeout:20];\n(\n${byTag}${byName});\nout center tags 200;`
+  return `[out:json][timeout:15];\n(\n${byTag}${byName});\nout center tags 200;`
 }
 
 function formatAddress(tags: Record<string, string>): string {
@@ -52,90 +53,44 @@ function formatAddress(tags: Record<string, string>): string {
   return parts.length ? parts.join(', ') : 'Endereço não informado no OpenStreetMap'
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-async function fetchMirror(url: string, body: string, outerSignal: AbortSignal | undefined, timeoutMs: number): Promise<Response> {
+function fetchMirror(url: string, body: string, outerSignal: AbortSignal | undefined): Promise<{ elements: OverpassNode[] }> {
   const controller = new AbortController()
   const onAbort = () => controller.abort()
   outerSignal?.addEventListener('abort', onAbort)
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    return await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body,
-      signal: controller.signal,
-    })
-  } finally {
-    clearTimeout(timer)
-    outerSignal?.removeEventListener('abort', onAbort)
-  }
-}
-
-async function queryOnePass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassNode[] } | null> {
-  const body = `data=${encodeURIComponent(query)}`
-  const order = [fastestMirror, ...MIRRORS.filter((m) => m !== fastestMirror)]
-  // Um espelho pode responder 200 com lista vazia mesmo havendo resultados (instabilidade daquela
-  // instância). Só aceitamos "zero resultados" se nenhum espelho trouxe nada; o primeiro que trouxer
-  // resultados de verdade vence e vira preferido nas próximas buscas.
-  let emptyFallback: { elements: OverpassNode[] } | null = null
-  for (const mirror of order) {
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-    try {
-      const res = await fetchMirror(mirror, body, signal, 6000)
-      if (!res.ok) continue
-      const json = await res.json()
-      if (!Array.isArray(json.elements)) continue
-      if (json.elements.length > 0) {
-        fastestMirror = mirror
-        return json
-      }
-      emptyFallback = json
-    } catch {
-      continue
-    }
-  }
-  return emptyFallback
-}
-
-// Os espelhos públicos do Overpass ficam instáveis momento a momento. Se a primeira rodada não
-// trouxe nada de nenhum espelho, aguardamos um instante e tentamos de novo antes de aceitar
-// "zero resultados" como resposta final.
-async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassNode[] }> {
-  const first = await queryOnePass(query, signal)
-  if (first && first.elements.length > 0) return first
-  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-  await sleep(2500)
-  const second = await queryOnePass(query, signal)
-  if (second && second.elements.length > 0) return second
-  if (first) return first
-  if (second) return second
-  throw new Error('Não foi possível buscar estabelecimentos agora — os servidores públicos do OpenStreetMap podem estar sobrecarregados. Tente novamente em instantes.')
-}
-
-async function searchOnce(segments: Segment[], origin: { lat: number; lng: number }, radiusKm: number, signal?: AbortSignal): Promise<Establishment[]> {
-  const tagSet = new Map<string, { key: string; value: string }>()
-  const categoryByTag = new Map<string, string>()
-  const freeText: string[] = []
-  segments.forEach((s) => {
-    if (s.osmTags.length === 0) {
-      freeText.push(s.label)
-      return
-    }
-    s.osmTags.forEach((t) => {
-      const key = `${t.key}=${t.value}`
-      tagSet.set(key, t)
-      if (!categoryByTag.has(key)) categoryByTag.set(key, s.label)
-    })
+  const timer = setTimeout(() => controller.abort(), MIRROR_TIMEOUT_MS)
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+    signal: controller.signal,
   })
-  const tags = Array.from(tagSet.values())
-  if (tags.length === 0 && freeText.length === 0) return []
+    .then((res) => {
+      if (!res.ok) throw new Error(`mirror ${url} respondeu ${res.status}`)
+      return res.json()
+    })
+    .then((json) => {
+      if (!Array.isArray(json.elements)) throw new Error(`mirror ${url} resposta inválida`)
+      return json as { elements: OverpassNode[] }
+    })
+    .finally(() => {
+      clearTimeout(timer)
+      outerSignal?.removeEventListener('abort', onAbort)
+    })
+}
 
-  const query = buildQuery(tags, freeText, origin.lat, origin.lng, Math.round(radiusKm * 1000))
-  const json = await queryOverpass(query, signal)
+// Dispara os espelhos em paralelo e usa o primeiro que responder com sucesso (Promise.any ignora
+// rejeições isoladas). Só falha se todos os espelhos falharem/expirarem.
+async function queryOverpass(query: string, signal?: AbortSignal): Promise<{ elements: OverpassNode[] }> {
+  const body = `data=${encodeURIComponent(query)}`
+  try {
+    return await Promise.any(MIRRORS.map((mirror) => fetchMirror(mirror, body, signal)))
+  } catch {
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+    throw new Error('Não foi possível buscar estabelecimentos agora — os servidores públicos do OpenStreetMap podem estar sobrecarregados. Tente novamente em instantes.')
+  }
+}
 
+function establishmentsFrom(json: { elements: OverpassNode[] }, origin: { lat: number; lng: number }, categoryByTag: Map<string, string>): Establishment[] {
   const results: Establishment[] = []
   const seen = new Set<string>()
   for (const el of json.elements ?? []) {
@@ -143,6 +98,8 @@ async function searchOnce(segments: Segment[], origin: { lat: number; lng: numbe
     const lon = el.lon ?? el.center?.lon
     if (lat == null || lon == null || !el.tags?.name) continue
 
+    // Deduplica por nome+coordenadas: o mesmo local pode aparecer em mais de uma categoria
+    // pesquisada, ou como node e way ao mesmo tempo.
     const dedupeKey = `${el.tags.name.toLowerCase()}-${lat.toFixed(4)}-${lon.toFixed(4)}`
     if (seen.has(dedupeKey)) continue
     seen.add(dedupeKey)
@@ -171,31 +128,37 @@ async function searchOnce(segments: Segment[], origin: { lat: number; lng: numbe
       distanciaKm: Math.round(haversineKm(origin, { lat, lng: lon }) * 10) / 10,
     })
   }
-
   return results.sort((a, b) => a.distanciaKm - b.distanciaKm)
 }
 
-const EXPANSION_MULTIPLIERS = [1, 2, 4]
-const MAX_RADIUS_KM = 80
-
-// Repete a busca ampliando o raio automaticamente se houver poucos resultados,
-// até 4x o raio pedido ou 80 km, o que vier primeiro.
-export async function searchNearbyPlaces(
+// Busca estabelecimentos num raio exato a partir da origem informada — sem nenhuma expansão
+// automática. O raio buscado é sempre exatamente o raio pedido pelo usuário.
+export async function searchPlaces(
   segments: Segment[],
   origin: { lat: number; lng: number },
   radiusKm: number,
-  options: { autoExpand: boolean; minResults?: number; signal?: AbortSignal } = { autoExpand: true },
-): Promise<{ results: Establishment[]; usedRadiusKm: number }> {
-  const minResults = options.minResults ?? 3
-  const multipliers = options.autoExpand ? EXPANSION_MULTIPLIERS : [1]
-  let last: Establishment[] = []
-  let usedRadiusKm = radiusKm
-  for (const multiplier of multipliers) {
-    const r = Math.min(radiusKm * multiplier, MAX_RADIUS_KM)
-    const results = await searchOnce(segments, origin, r, options.signal)
-    last = results
-    usedRadiusKm = r
-    if (results.length >= minResults || r >= MAX_RADIUS_KM) break
-  }
-  return { results: last, usedRadiusKm }
+  signal?: AbortSignal,
+): Promise<Establishment[]> {
+  const tagSet = new Map<string, { key: string; value: string }>()
+  const categoryByTag = new Map<string, string>()
+  const freeText: string[] = []
+  segments.forEach((s) => {
+    if (s.osmTags.length === 0) {
+      freeText.push(s.label)
+      return
+    }
+    s.osmTags.forEach((t) => {
+      const key = `${t.key}=${t.value}`
+      tagSet.set(key, t)
+      if (!categoryByTag.has(key)) categoryByTag.set(key, s.label)
+    })
+  })
+  const tags = Array.from(tagSet.values())
+  if (tags.length === 0 && freeText.length === 0) return []
+
+  // Todos os segmentos entram numa única consulta Overpass (uma requisição, não uma por segmento)
+  // — isso já é o jeito mais rápido de pesquisar vários segmentos ao mesmo tempo.
+  const query = buildQuery(tags, freeText, origin.lat, origin.lng, Math.round(radiusKm * 1000))
+  const json = await queryOverpass(query, signal)
+  return establishmentsFrom(json, origin, categoryByTag)
 }

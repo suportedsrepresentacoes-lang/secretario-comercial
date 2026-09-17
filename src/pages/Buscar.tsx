@@ -1,20 +1,23 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { LocateFixed, Search, Plus, Check, UserPlus, Phone, Clock, MapPin, Route, AlertCircle, Play, X } from 'lucide-react'
+import { LocateFixed, Search, Plus, Check, UserPlus, Phone, Clock, MapPin, Route, AlertCircle, Play, X, ChevronsUp } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { LocationButtons } from '../components/ui/LocationButtons'
 import { getCurrentPosition } from '../services/geolocation'
 import { searchAddress, addressAt, type AddressMatch } from '../services/geocoding'
-import { searchNearbyPlaces } from '../services/places'
+import { searchPlaces } from '../services/places'
 import { openNavigation } from '../services/navigation'
 import { openStreetView } from '../services/streetView'
 import { searchSegments, customSegment } from '../data/segments'
 import type { Establishment, Segment } from '../types'
+
+const EXPAND_MIN_RESULTS = 3
+const EXPAND_MAX_KM = 80
 
 const RADIUS_OPTIONS = [3, 5, 10, 20, 50]
 
@@ -54,14 +57,15 @@ export default function Buscar() {
   const [customSegmentText, setCustomSegmentText] = useState('')
 
   const [radiusKm, setRadiusKm] = useState(10)
-  const [autoExpand, setAutoExpand] = useState(true)
-  const [usedRadiusKm, setUsedRadiusKm] = useState<number | null>(null)
+  const [searchedRadiusKm, setSearchedRadiusKm] = useState<number | null>(null)
 
   const [searching, setSearching] = useState(false)
+  const [expanding, setExpanding] = useState(false)
   const [slowSearch, setSlowSearch] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [results, setResults] = useState<Establishment[]>([])
   const [savedAsClient, setSavedAsClient] = useState<Set<string>>(new Set())
+  const abortRef = useRef<AbortController | null>(null)
 
   const filteredSegments = useMemo(() => searchSegments(segmentQuery), [segmentQuery])
   const selectedIds = new Set(selectedSegments.map((s) => s.id))
@@ -116,25 +120,46 @@ export default function Buscar() {
     setCustomSegmentText('')
   }
 
-  async function handleSearch() {
+  async function runSearch(atRadiusKm: number, opts: { expand?: boolean } = {}) {
     if (!draftOrigin || selectedSegments.length === 0) return
-    setSearching(true)
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    if (opts.expand) setExpanding(true)
+    else {
+      setSearching(true)
+      setResults([])
+    }
     setSlowSearch(false)
     setSearchError(null)
-    setUsedRadiusKm(null)
-    const slowTimer = setTimeout(() => setSlowSearch(true), 7000)
+    const slowTimer = setTimeout(() => setSlowSearch(true), 4000)
     try {
-      const { results: found, usedRadiusKm: usedR } = await searchNearbyPlaces(selectedSegments, draftOrigin, radiusKm, { autoExpand })
+      const found = await searchPlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
+      if (controller.signal.aborted) return
       setResults(found)
-      setUsedRadiusKm(usedR)
+      setSearchedRadiusKm(atRadiusKm)
       if (found.length === 0) setSearchError('Nenhum estabelecimento encontrado nessa região. Tente aumentar o raio ou escolher outros segmentos.')
     } catch (err) {
+      if (controller.signal.aborted) return
       setSearchError(err instanceof Error ? err.message : 'Falha ao buscar estabelecimentos. Tente novamente.')
     } finally {
-      clearTimeout(slowTimer)
-      setSlowSearch(false)
-      setSearching(false)
+      if (!controller.signal.aborted) {
+        clearTimeout(slowTimer)
+        setSlowSearch(false)
+        setSearching(false)
+        setExpanding(false)
+      }
     }
+  }
+
+  function handleSearch() {
+    runSearch(radiusKm)
+  }
+
+  function handleExpand() {
+    const next = Math.min(searchedRadiusKm ? searchedRadiusKm * 2 : radiusKm * 2, EXPAND_MAX_KM)
+    runSearch(next, { expand: true })
   }
 
   function handleAddToRoute(e: Establishment) {
@@ -274,19 +299,18 @@ export default function Buscar() {
                 </button>
               ))}
             </div>
-            <label className="mt-3 flex items-start gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2.5 text-[12px]">
-              <input type="checkbox" checked={autoExpand} onChange={(e) => setAutoExpand(e.target.checked)} className="mt-0.5 accent-[#3B82F6]" />
-              <span>
-                <span className="font-medium text-[#0F2A44]">Expandir busca automaticamente caso haja poucos resultados</span>
-                <span className="mt-0.5 block text-[11px] text-[#6B7F93]">Amplia o raio (até 80 km) se houver menos de 3 estabelecimentos.</span>
-              </span>
-            </label>
           </Card>
+
+          {draftOrigin && (
+            <p className="flex items-center gap-1.5 text-[12px] text-[#6B7F93]">
+              <MapPin size={12} className="shrink-0" /> Buscando a partir de: <strong className="text-[#0F2A44]">{originLabel ?? 'local de partida definido'}</strong> · raio {radiusKm} km
+            </p>
+          )}
 
           <Button className="w-full" disabled={!draftOrigin || selectedSegments.length === 0 || searching} onClick={handleSearch}>
             <Search size={15} /> {searching ? 'Buscando…' : 'Buscar Clientes na Região'}
           </Button>
-          {slowSearch && <p className="text-center text-[11.5px] text-[#6B7F93]">Os servidores públicos do OpenStreetMap estão respondendo devagar agora — pode levar até 1 minuto. Continue aguardando…</p>}
+          {slowSearch && <p className="text-center text-[11.5px] text-[#6B7F93]">O OpenStreetMap está respondendo devagar agora — pode levar mais alguns segundos…</p>}
 
           {draftStops.length > 0 && (
             <Button variant="secondary" className="w-full" onClick={() => navigate('/rotas')}>
@@ -302,7 +326,7 @@ export default function Buscar() {
               {draftOrigin && (
                 <>
                   <Marker position={[draftOrigin.lat, draftOrigin.lng]} icon={meIcon}><Popup>Você está aqui</Popup></Marker>
-                  <Circle center={[draftOrigin.lat, draftOrigin.lng]} radius={(usedRadiusKm ?? radiusKm) * 1000} pathOptions={{ color: '#5B8DEF', fillOpacity: 0.04, weight: 1 }} />
+                  <Circle center={[draftOrigin.lat, draftOrigin.lng]} radius={(searchedRadiusKm ?? radiusKm) * 1000} pathOptions={{ color: '#5B8DEF', fillOpacity: 0.04, weight: 1 }} />
                 </>
               )}
               {results.map((r) => (
@@ -331,14 +355,22 @@ export default function Buscar() {
                 <MapPin size={14} className="text-[#6B7F93]" /> Estabelecimentos Encontrados
                 <span className="rounded-full bg-[#EAF3FC] px-1.5 py-0.5 text-[11px] text-[#33495E]">{results.length}</span>
               </span>
-              {usedRadiusKm != null && <span className="text-[11px] text-[#6B7F93]">raio usado: {usedRadiusKm} km</span>}
+              {searchedRadiusKm != null && <span className="text-[11px] text-[#6B7F93]">raio usado: {searchedRadiusKm} km</span>}
             </div>
+            {!searchError && results.length > 0 && results.length < EXPAND_MIN_RESULTS && (searchedRadiusKm ?? radiusKm) < EXPAND_MAX_KM && (
+              <div className="flex items-center justify-between gap-2 border-b border-[#E1EDFB] bg-[#EAF3FC] px-4 py-2.5 text-[12.5px] text-[#33495E]">
+                <span>Encontramos apenas {results.length} empresa{results.length > 1 ? 's' : ''} em {searchedRadiusKm ?? radiusKm} km.</span>
+                <button onClick={handleExpand} disabled={expanding} className="flex shrink-0 items-center gap-1 font-medium text-[#3B82F6] disabled:opacity-60">
+                  <ChevronsUp size={13} /> {expanding ? 'Ampliando…' : `Ampliar para ${Math.min((searchedRadiusKm ?? radiusKm) * 2, EXPAND_MAX_KM)} km`}
+                </button>
+              </div>
+            )}
             {searchError && (
               <div className="flex items-start gap-2 border-b border-[#E1EDFB] px-4 py-3 text-[12.5px] text-[#B45309]">
                 <AlertCircle size={14} className="mt-0.5 shrink-0" />
                 <span className="flex-1">
                   {searchError}
-                  <button onClick={handleSearch} className="ml-2 font-medium text-[#3B82F6] underline decoration-dotted">tentar novamente</button>
+                  <button onClick={() => runSearch(searchedRadiusKm ?? radiusKm)} className="ml-2 font-medium text-[#3B82F6] underline decoration-dotted">tentar novamente</button>
                 </span>
               </div>
             )}
