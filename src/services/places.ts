@@ -158,6 +158,19 @@ function establishmentsFrom(json: { elements: OverpassNode[] }, origin: { lat: n
   return results.sort((a, b) => a.distanciaKm - b.distanciaKm)
 }
 
+export interface PlacesSearchResult {
+  results: Establishment[]
+  /** Consulta Overpass QL usada — útil para depurar abrindo no Overpass Turbo. */
+  query: string | null
+}
+
+// Monta o link do Overpass Turbo (ferramenta oficial do projeto OpenStreetMap) já com a mesma
+// consulta usada pela busca, para conferir visualmente no mapa se existem dados cadastrados
+// naquela região — sem depender do nosso código.
+export function overpassTurboUrl(query: string): string {
+  return `https://overpass-turbo.eu/?Q=${encodeURIComponent(query)}&R`
+}
+
 // Busca estabelecimentos num raio exato a partir da origem informada — sem nenhuma expansão
 // automática. O raio buscado é sempre exatamente o raio pedido pelo usuário.
 export async function searchPlaces(
@@ -165,7 +178,7 @@ export async function searchPlaces(
   origin: { lat: number; lng: number },
   radiusKm: number,
   signal?: AbortSignal,
-): Promise<Establishment[]> {
+): Promise<PlacesSearchResult> {
   const tagSet = new Map<string, { key: string; value: string }>()
   const categoryByTag = new Map<string, string>()
   const freeText: string[] = []
@@ -181,11 +194,11 @@ export async function searchPlaces(
     })
   })
   const tags = Array.from(tagSet.values())
-  if (tags.length === 0 && freeText.length === 0) return []
+  if (tags.length === 0 && freeText.length === 0) return { results: [], query: null }
 
   // Todos os segmentos entram numa única consulta Overpass (uma requisição, não uma por segmento)
   // — isso já é o jeito mais rápido de pesquisar vários segmentos ao mesmo tempo.
   const query = buildQuery(tags, freeText, origin.lat, origin.lng, Math.round(radiusKm * 1000))
   const json = await queryOverpass(query, signal)
-  return establishmentsFrom(json, origin, categoryByTag)
+  return { results: establishmentsFrom(json, origin, categoryByTag), query }
 }

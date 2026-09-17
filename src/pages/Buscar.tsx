@@ -10,7 +10,7 @@ import { Button } from '../components/ui/Button'
 import { LocationButtons } from '../components/ui/LocationButtons'
 import { getCurrentPosition } from '../services/geolocation'
 import { searchAddress, addressAt, type AddressMatch } from '../services/geocoding'
-import { searchPlaces } from '../services/places'
+import { searchPlaces, overpassTurboUrl } from '../services/places'
 import { openNavigation } from '../services/navigation'
 import { openStreetView } from '../services/streetView'
 import { searchSegments, customSegment } from '../data/segments'
@@ -64,6 +64,7 @@ export default function Buscar() {
   const [slowSearch, setSlowSearch] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [results, setResults] = useState<Establishment[]>([])
+  const [lastQuery, setLastQuery] = useState<string | null>(null)
   const [savedAsClient, setSavedAsClient] = useState<Set<string>>(new Set())
   const abortRef = useRef<AbortController | null>(null)
 
@@ -135,10 +136,11 @@ export default function Buscar() {
     setSearchError(null)
     const slowTimer = setTimeout(() => setSlowSearch(true), 4000)
     try {
-      const found = await searchPlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
+      const { results: found, query } = await searchPlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
       if (controller.signal.aborted) return
       setResults(found)
       setSearchedRadiusKm(atRadiusKm)
+      setLastQuery(query)
       if (found.length === 0) setSearchError('Nenhum estabelecimento encontrado nessa região. Tente aumentar o raio ou escolher outros segmentos.')
     } catch (err) {
       if (controller.signal.aborted) return
@@ -377,6 +379,15 @@ export default function Buscar() {
               <div className="flex items-start gap-2 border-b border-[#E1EDFB] px-4 py-3 text-[12.5px] text-[#B45309]">
                 <AlertCircle size={14} className="mt-0.5 shrink-0" />
                 <span className="flex-1">{searchError}</span>
+              </div>
+            )}
+            {!searching && results.length === 0 && lastQuery && (
+              <div className="border-b border-[#E1EDFB] px-4 py-3 text-[12px] text-[#6B7F93]">
+                Se você sabe que existem empresas dessa categoria aqui perto, confira os dados brutos do OpenStreetMap para esta busca:{' '}
+                <a href={overpassTurboUrl(lastQuery)} target="_blank" rel="noopener noreferrer" className="font-medium text-[#3B82F6] underline decoration-dotted">
+                  abrir no Overpass Turbo
+                </a>
+                . Se aparecer vazio lá também, as empresas ainda não estão cadastradas no mapa livre (não é um problema do CampoVista); tente também "Outro segmento…" com o nome de uma loja específica.
               </div>
             )}
             <div className="max-h-[420px] divide-y divide-[#E1EDFB] overflow-y-auto">
