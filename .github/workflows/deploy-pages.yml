@@ -29,8 +29,6 @@ jobs:
         run: npm ci
 
       - name: Build
-        env:
-          VITE_GOOGLE_PLACES_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
         run: npm run build -- --base=/secretario-comercial/
 
       - name: Deploy to gh-pages
