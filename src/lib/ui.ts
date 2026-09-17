@@ -1,4 +1,4 @@
-﻿import type { ClientStatus, OpportunityStage, OrderStatus, VisitStatus, FollowUpStatus, ExpenseCategory, StopStatus } from '../types'
+﻿import type { ClientStatus, OpportunityStage, OrderStatus, VisitStatus, FollowUpStatus, ExpenseCategory, StopStatus, VisitResultado } from '../types'
 
 export const STATUS_LABEL: Record<ClientStatus, string> = {
   lead: 'Lead',
@@ -12,9 +12,9 @@ export const STATUS_LABEL: Record<ClientStatus, string> = {
 export const STATUS_COLOR: Record<ClientStatus, string> = {
   lead: '#9B7FE0',
   novo: '#5B8DEF',
-  ativo: '#3FA9A0',
-  inativo: '#8F8676',
-  perdido: '#D9695F',
+  ativo: '#16A34A',
+  inativo: '#6B7F93',
+  perdido: '#EF4444',
   potencial: '#3B82F6',
 }
 
@@ -47,11 +47,11 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 }
 
 export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
-  rascunho: '#8F8676',
+  rascunho: '#6B7F93',
   enviado: '#5B8DEF',
   aprovado: '#3B82F6',
-  faturado: '#3FA9A0',
-  cancelado: '#D9695F',
+  faturado: '#16A34A',
+  cancelado: '#EF4444',
 }
 
 export const VISIT_STATUS_LABEL: Record<VisitStatus, string> = {
@@ -81,6 +81,17 @@ export const STOP_STATUS_LABEL: Record<StopStatus, string> = {
   pendente: 'Pendente',
   visitado: 'Visitado',
   nao_visitado: 'Não visitado',
+}
+
+export const VISIT_RESULTADO_LABEL: Record<VisitResultado, string> = {
+  venda_realizada: 'Venda realizada',
+  pedido_negociacao: 'Pedido em negociação',
+  proposta_enviada: 'Proposta enviada',
+  retornar: 'Retornar',
+  sem_interesse: 'Sem interesse',
+  nao_atendido: 'Não atendido',
+  cliente_nao_encontrado: 'Cliente não encontrado',
+  outro: 'Outro',
 }
 
 export function initials(name: string): string {

@@ -14,9 +14,9 @@ export default defineConfig({
       manifest: {
         name: 'Secretário Comercial',
         short_name: 'Sec. Comercial',
-        description: 'CRM completo para representantes comerciais: clientes, mapa, rotas, agenda, pedidos, comissões e IA comercial.',
-        theme_color: '#12151B',
-        background_color: '#12151B',
+        description: 'O copiloto do representante na rua: geolocalização, prospecção por segmento, roteirização, Street View, navegação, registro de visitas e controle de combustível e despesas.',
+        theme_color: '#3B82F6',
+        background_color: '#FFFFFF',
         display: 'standalone',
         orientation: 'portrait-primary',
         start_url: '/',

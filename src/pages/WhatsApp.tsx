@@ -76,11 +76,11 @@ export default function WhatsApp() {
 
   return (
     <div className="flex h-[calc(100dvh-96px)] gap-4 sm:h-[calc(100dvh-104px)]">
-      <div className="flex w-full max-w-[300px] shrink-0 flex-col rounded-md border border-[#E4DCC8] bg-[#FFFFFF]">
-        <div className="border-b border-[#E4DCC8] p-3">
-          <div className="flex items-center gap-2 rounded-[6px] border border-[#E4DCC8] bg-[#F3EEE3] px-3 py-2 text-[13px] text-[#8F8676]">
+      <div className="flex w-full max-w-[300px] shrink-0 flex-col rounded-md border border-[#CFE0F5] bg-[#FFFFFF]">
+        <div className="border-b border-[#CFE0F5] p-3">
+          <div className="flex items-center gap-2 rounded-[6px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2 text-[13px] text-[#6B7F93]">
             <Search size={14} />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar conversa…" className="w-full bg-transparent text-[#2B2620] outline-none placeholder:text-[#8F8676]" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar conversa…" className="w-full bg-transparent text-[#0F2A44] outline-none placeholder:text-[#6B7F93]" />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -90,35 +90,35 @@ export default function WhatsApp() {
               <button
                 key={client.id}
                 onClick={() => selectClient(client.id)}
-                className={`flex w-full items-center gap-2.5 border-b border-[#ECE5D6] px-3 py-3 text-left hover:bg-[#F3EEE3] ${activeClientId === client.id ? 'bg-[#ECE3D2]' : ''}`}
+                className={`flex w-full items-center gap-2.5 border-b border-[#E1EDFB] px-3 py-3 text-left hover:bg-[#EAF3FC] ${activeClientId === client.id ? 'bg-[#DCEAFB]' : ''}`}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E4DCC8] text-[11px] font-bold">{initials(client.nomeFantasia ?? client.razaoSocial)}</div>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#CFE0F5] text-[11px] font-bold">{initials(client.nomeFantasia ?? client.razaoSocial)}</div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-[13px] font-medium">{client.nomeFantasia ?? client.razaoSocial}</span>
-                    {last && <span className="mono shrink-0 text-[10px] text-[#8F8676]">{formatTime(last.hora)}</span>}
+                    {last && <span className="mono shrink-0 text-[10px] text-[#6B7F93]">{formatTime(last.hora)}</span>}
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-[11.5px] text-[#8F8676]">{last?.texto}</span>
-                    {convo!.naoLidas > 0 && <span className="mono shrink-0 rounded-full bg-[#3FA9A0] px-1.5 py-0.5 text-[9px] font-bold text-[#2B2620]">{convo!.naoLidas}</span>}
+                    <span className="truncate text-[11.5px] text-[#6B7F93]">{last?.texto}</span>
+                    {convo!.naoLidas > 0 && <span className="mono shrink-0 rounded-full bg-[#16A34A] px-1.5 py-0.5 text-[9px] font-bold text-[#0F2A44]">{convo!.naoLidas}</span>}
                   </div>
                 </div>
               </button>
             )
           })}
-          {filtered.length === 0 && <p className="p-4 text-center text-[12.5px] text-[#8F8676]">Nenhuma conversa.</p>}
+          {filtered.length === 0 && <p className="p-4 text-center text-[12.5px] text-[#6B7F93]">Nenhuma conversa.</p>}
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col rounded-md border border-[#E4DCC8] bg-[#FFFFFF]">
+      <div className="flex flex-1 flex-col rounded-md border border-[#CFE0F5] bg-[#FFFFFF]">
         {activeClient ? (
           <>
-            <div className="flex items-center justify-between border-b border-[#E4DCC8] px-4 py-3">
+            <div className="flex items-center justify-between border-b border-[#CFE0F5] px-4 py-3">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E4DCC8] text-[11px] font-bold">{initials(activeClient.nomeFantasia ?? activeClient.razaoSocial)}</div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#CFE0F5] text-[11px] font-bold">{initials(activeClient.nomeFantasia ?? activeClient.razaoSocial)}</div>
                 <div>
                   <div className="text-[13.5px] font-medium">{activeClient.nomeFantasia ?? activeClient.razaoSocial}</div>
-                  <div className="text-[11px] text-[#8F8676]">{activeClient.contatos[0]?.nome}</div>
+                  <div className="text-[11px] text-[#6B7F93]">{activeClient.contatos[0]?.nome}</div>
                 </div>
               </div>
               <Button variant="secondary" onClick={() => setFollowUpOpen(true)}><BellPlus size={13} /> Criar follow-up</Button>
@@ -127,23 +127,23 @@ export default function WhatsApp() {
             <div className="flex-1 space-y-2 overflow-y-auto p-4">
               {activeConvo?.mensagens.map((m) => (
                 <div key={m.id} className={`flex ${m.autor === 'representante' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[75%] rounded-[10px] px-3 py-2 text-[13px] ${m.autor === 'representante' ? 'bg-[#3FA9A0]/20 text-[#2B2620]' : 'bg-[#ECE5D6] text-[#2B2620]'}`}>
+                  <div className={`max-w-[75%] rounded-[10px] px-3 py-2 text-[13px] ${m.autor === 'representante' ? 'bg-[#16A34A]/20 text-[#0F2A44]' : 'bg-[#E1EDFB] text-[#0F2A44]'}`}>
                     <div>{m.texto}</div>
-                    <div className="mono mt-1 text-right text-[10px] text-[#8F8676]">{formatTime(m.hora)}</div>
+                    <div className="mono mt-1 text-right text-[10px] text-[#6B7F93]">{formatTime(m.hora)}</div>
                   </div>
                 </div>
               ))}
               {(!activeConvo || activeConvo.mensagens.length === 0) && (
-                <p className="py-10 text-center text-[12.5px] text-[#8F8676]">Nenhuma mensagem ainda.</p>
+                <p className="py-10 text-center text-[12.5px] text-[#6B7F93]">Nenhuma mensagem ainda.</p>
               )}
             </div>
 
-            <div className="border-t border-[#E4DCC8] p-3">
+            <div className="border-t border-[#CFE0F5] p-3">
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {QUICK_REPLIES.map((q) => (
-                  <button key={q} onClick={() => setDraft(q)} className="rounded-full border border-[#E4DCC8] px-2 py-0.5 text-[10.5px] text-[#8F8676] hover:text-[#5A5346]">{q}</button>
+                  <button key={q} onClick={() => setDraft(q)} className="rounded-full border border-[#CFE0F5] px-2 py-0.5 text-[10.5px] text-[#6B7F93] hover:text-[#33495E]">{q}</button>
                 ))}
-                <button onClick={simulateReply} className="rounded-full border border-[#3FA9A0]/40 bg-[#3FA9A0]/10 px-2 py-0.5 text-[10.5px] text-[#3FA9A0]">Simular resposta do cliente</button>
+                <button onClick={simulateReply} className="rounded-full border border-[#16A34A]/40 bg-[#16A34A]/10 px-2 py-0.5 text-[10.5px] text-[#16A34A]">Simular resposta do cliente</button>
               </div>
               <div className="flex items-center gap-2">
                 <Input
@@ -158,7 +158,7 @@ export default function WhatsApp() {
             </div>
           </>
         ) : (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-[#8F8676]">
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-[#6B7F93]">
             <MessageCircle size={28} />
             <span className="text-[13px]">Selecione uma conversa</span>
           </div>

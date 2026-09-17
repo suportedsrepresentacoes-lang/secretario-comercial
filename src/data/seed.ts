@@ -30,7 +30,7 @@ export const industries: Industry[] = [
     contatoTelefone: '(62) 3251-8890',
     comissaoPadrao: 5,
     categorias: ['Parafusos', 'Fixadores', 'Abrasivos'],
-    cor: '#3FA9A0',
+    cor: '#16A34A',
     condicaoPagamento: '28 dias',
     prazoEntregaDias: 7,
   },

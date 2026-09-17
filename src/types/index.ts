@@ -185,6 +185,16 @@ export interface SavedRoute {
 export type StopStatus = 'pendente' | 'visitado' | 'nao_visitado'
 export type StopOrigin = 'cliente' | 'prospect'
 
+export type VisitResultado =
+  | 'venda_realizada'
+  | 'pedido_negociacao'
+  | 'proposta_enviada'
+  | 'retornar'
+  | 'sem_interesse'
+  | 'nao_atendido'
+  | 'cliente_nao_encontrado'
+  | 'outro'
+
 export interface RouteStop {
   id: string
   origem: StopOrigin
@@ -198,6 +208,9 @@ export interface RouteStop {
   segmento?: string
   status: StopStatus
   observacao?: string
+  resultado?: VisitResultado
+  chegadaEm?: string
+  saidaEm?: string
 }
 
 export type RouteStatus = 'planejada' | 'em_andamento' | 'concluida'
@@ -225,7 +238,10 @@ export interface RoutePlan {
   finalizadaEm?: string
 }
 
+export type FuelType = 'gasolina' | 'etanol' | 'diesel' | 'gnv' | 'eletrico'
+
 export interface FuelDefaults {
+  tipo: FuelType
   consumoKmL: number
   precoLitro: number
 }

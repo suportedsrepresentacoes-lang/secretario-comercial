@@ -85,7 +85,12 @@ interface AppState {
   removeStopFromRoute: (routeId: string, stopId: string) => void
   updateRouteFuel: (routeId: string, patch: Partial<Pick<FuelDefaults, 'consumoKmL' | 'precoLitro'>>) => void
   startRoute: (routeId: string) => void
-  updateStopStatus: (routeId: string, stopId: string, status: StopStatus, observacao?: string) => void
+  startStopVisit: (routeId: string, stopId: string) => void
+  updateStopStatus: (
+    routeId: string,
+    stopId: string,
+    patch: Partial<Pick<RouteStop, 'status' | 'observacao' | 'resultado'>>,
+  ) => void
   finishRoute: (routeId: string) => void
   deleteRoute: (routeId: string) => void
   updateFuelDefaults: (patch: Partial<FuelDefaults>) => void
@@ -128,7 +133,7 @@ export const useAppStore = create<AppState>()(
       companyName: 'DS Representações',
 
       routes: [],
-      fuelDefaults: { consumoKmL: 10, precoLitro: 6.2 },
+      fuelDefaults: { tipo: 'gasolina', consumoKmL: 10, precoLitro: 6.2 },
       draftOrigin: null,
       draftStops: [],
 
@@ -374,11 +379,31 @@ export const useAppStore = create<AppState>()(
           routes: s.routes.map((r) => (r.id === routeId ? { ...r, status: 'em_andamento', iniciadaEm: todayISO() } : r)),
         })),
 
-      updateStopStatus: (routeId, stopId, status, observacao) =>
+      startStopVisit: (routeId, stopId) =>
         set((s) => ({
           routes: s.routes.map((r) =>
             r.id === routeId
-              ? { ...r, paradas: r.paradas.map((p) => (p.id === stopId ? { ...p, status, observacao: observacao ?? p.observacao } : p)) }
+              ? { ...r, paradas: r.paradas.map((p) => (p.id === stopId ? { ...p, chegadaEm: todayISO() } : p)) }
+              : r,
+          ),
+        })),
+
+      updateStopStatus: (routeId, stopId, patch) =>
+        set((s) => ({
+          routes: s.routes.map((r) =>
+            r.id === routeId
+              ? {
+                  ...r,
+                  paradas: r.paradas.map((p) =>
+                    p.id === stopId
+                      ? {
+                          ...p,
+                          ...patch,
+                          saidaEm: patch.status && patch.status !== 'pendente' ? todayISO() : p.saidaEm,
+                        }
+                      : p,
+                  ),
+                }
               : r,
           ),
         })),
@@ -423,7 +448,7 @@ export const useAppStore = create<AppState>()(
           expenses: seed.expenses,
           savedRoutes: [],
           routes: [],
-          fuelDefaults: { consumoKmL: 10, precoLitro: 6.2 },
+          fuelDefaults: { tipo: 'gasolina', consumoKmL: 10, precoLitro: 6.2 },
           draftOrigin: null,
           draftStops: [],
         }),

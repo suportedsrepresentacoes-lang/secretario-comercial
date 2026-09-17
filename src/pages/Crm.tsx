@@ -11,11 +11,11 @@ import type { Opportunity, OpportunityStage } from '../types'
 const STAGE_COLOR: Record<OpportunityStage, string> = {
   novo_lead: '#9B7FE0',
   primeiro_contato: '#5B8DEF',
-  interessado: '#4FC97A',
+  interessado: '#16A34A',
   orcamento_enviado: '#3B82F6',
-  negociacao: '#F2B33D',
-  venda_realizada: '#3FA9A0',
-  perdido: '#D9695F',
+  negociacao: '#F59E0B',
+  venda_realizada: '#16A34A',
+  perdido: '#EF4444',
 }
 
 function empty(): Omit<Opportunity, 'id' | 'criadoEm' | 'atualizadoEm'> {
@@ -49,7 +49,7 @@ export default function Crm() {
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[20px] font-bold">CRM / Funil</h1>
-          <p className="mt-1 text-[13px] text-[#8F8676]">{opportunities.length} oportunidades · Pipeline em aberto: {currency(totalPipeline)}</p>
+          <p className="mt-1 text-[13px] text-[#6B7F93]">{opportunities.length} oportunidades · Pipeline em aberto: {currency(totalPipeline)}</p>
         </div>
         <Button onClick={() => setOpen(true)}><Plus size={15} /> Nova oportunidade</Button>
       </div>
@@ -65,16 +65,16 @@ export default function Crm() {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`flex w-[260px] shrink-0 flex-col rounded-md border p-3 ${snapshot.isDraggingOver ? 'border-[#3B82F6]/50 bg-[#ECE3D2]' : 'border-[#E4DCC8] bg-[#F3EEE3]'}`}
+                    className={`flex w-[260px] shrink-0 flex-col rounded-md border p-3 ${snapshot.isDraggingOver ? 'border-[#3B82F6]/50 bg-[#DCEAFB]' : 'border-[#CFE0F5] bg-[#EAF3FC]'}`}
                   >
                     <div className="mb-3 flex items-center justify-between px-1">
                       <div className="flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full" style={{ background: STAGE_COLOR[stage] }} />
                         <span className="text-[12.5px] font-semibold">{STAGE_LABEL[stage]}</span>
                       </div>
-                      <span className="mono text-[11px] text-[#8F8676]">{items.length}</span>
+                      <span className="mono text-[11px] text-[#6B7F93]">{items.length}</span>
                     </div>
-                    {stageTotal > 0 && <div className="mb-2 px-1 text-[11px] text-[#8F8676]">{currency(stageTotal)}</div>}
+                    {stageTotal > 0 && <div className="mb-2 px-1 text-[11px] text-[#6B7F93]">{currency(stageTotal)}</div>}
                     <div className="flex min-h-[80px] flex-1 flex-col gap-2">
                       {items.map((o, idx) => {
                         const client = clients.find((c) => c.id === o.clientId)
@@ -87,10 +87,10 @@ export default function Crm() {
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 onDoubleClick={() => confirm('Remover oportunidade?') && deleteOpportunity(o.id)}
-                                className={`rounded-[6px] border border-[#E4DCC8] bg-[#FFFFFF] p-3 text-[12.5px] ${dragSnapshot.isDragging ? 'shadow-xl ring-1 ring-[#3B82F6]/40' : ''}`}
+                                className={`rounded-[6px] border border-[#CFE0F5] bg-[#FFFFFF] p-3 text-[12.5px] ${dragSnapshot.isDragging ? 'shadow-xl ring-1 ring-[#3B82F6]/40' : ''}`}
                               >
-                                <div className="font-medium text-[#2B2620]">{o.titulo}</div>
-                                <div className="mt-0.5 truncate text-[11.5px] text-[#8F8676]">{client?.nomeFantasia ?? client?.razaoSocial}</div>
+                                <div className="font-medium text-[#0F2A44]">{o.titulo}</div>
+                                <div className="mt-0.5 truncate text-[11.5px] text-[#6B7F93]">{client?.nomeFantasia ?? client?.razaoSocial}</div>
                                 <div className="mt-2 flex items-center justify-between">
                                   <span className="mono text-[#3B82F6]">{currency(o.valorEstimado)}</span>
                                   {ind && <span className="rounded-full px-1.5 py-0.5 text-[10px]" style={{ background: `${ind.cor}22`, color: ind.cor }}>{ind.nome}</span>}

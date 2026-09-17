@@ -5,23 +5,25 @@
   --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  --color-bg: #F7F4EE;
+  --color-bg: #F2F7FD;
   --color-bg-sidebar: #FFFFFF;
   --color-bg-card: #FFFFFF;
-  --color-bg-hover: #F3EEE3;
-  --color-bg-active: #ECE3D2;
-  --color-bg-chip: #ECE5D6;
+  --color-bg-hover: #EAF3FC;
+  --color-bg-active: #DCEAFB;
+  --color-bg-chip: #E1EDFB;
 
-  --color-border: #E4DCC8;
-  --color-border-soft: #ECE5D6;
+  --color-border: #CFE0F5;
+  --color-border-soft: #E1EDFB;
 
-  --color-text: #2B2620;
-  --color-text-muted: #8F8676;
-  --color-text-secondary: #5A5346;
+  --color-text: #0F2A44;
+  --color-text-muted: #6B7F93;
+  --color-text-secondary: #33495E;
 
   --color-accent: #3B82F6;
-  --color-teal: #3FA9A0;
-  --color-danger: #D9695F;
+  --color-accent-dark: #1D4ED8;
+  --color-success: #16A34A;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
   --color-blue: #5B8DEF;
   --color-purple: #9B7FE0;
 }
@@ -42,27 +44,27 @@ body {
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: #E4DCC8; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #CFE0F5; border-radius: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 * {
-  scrollbar-color: #E4DCC8 transparent;
+  scrollbar-color: #CFE0F5 transparent;
   scrollbar-width: thin;
 }
 
 .leaflet-container {
-  background: #F3EEE3 !important;
+  background: #EAF3FC !important;
   font-family: var(--font-sans);
 }
 
 .leaflet-tile-pane {
-  filter: saturate(0.85) brightness(1.02);
+  filter: saturate(0.9) brightness(1.03) hue-rotate(2deg);
 }
 
 .leaflet-popup-content-wrapper {
   background: #FFFFFF !important;
-  color: #2B2620 !important;
-  border: 1px solid #E4DCC8;
+  color: #0F2A44 !important;
+  border: 1px solid #CFE0F5;
   border-radius: 8px;
 }
 .leaflet-popup-tip {
@@ -70,13 +72,13 @@ body {
 }
 .leaflet-control-zoom a {
   background: #FFFFFF !important;
-  color: #2B2620 !important;
-  border-color: #E4DCC8 !important;
+  color: #0F2A44 !important;
+  border-color: #CFE0F5 !important;
 }
 .leaflet-control-attribution {
   background: rgba(255,255,255,0.75) !important;
-  color: #8F8676 !important;
+  color: #6B7F93 !important;
 }
 .leaflet-control-attribution a {
-  color: #5A5346 !important;
+  color: #33495E !important;
 }

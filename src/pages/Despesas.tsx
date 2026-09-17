@@ -13,11 +13,11 @@ import type { Expense, ExpenseCategory } from '../types'
 
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   combustivel: '#3B82F6',
-  alimentacao: '#3FA9A0',
+  alimentacao: '#16A34A',
   hospedagem: '#5B8DEF',
   manutencao: '#9B7FE0',
-  pedagio: '#4FC97A',
-  outros: '#8F8676',
+  pedagio: '#16A34A',
+  outros: '#6B7F93',
 }
 
 function empty(): Omit<Expense, 'id'> {
@@ -53,7 +53,7 @@ export default function Despesas() {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-[20px] font-bold">Despesas</h1>
-          <p className="mt-1 text-[13px] text-[#8F8676]">Controle de gastos de viagens e visitas</p>
+          <p className="mt-1 text-[13px] text-[#6B7F93]">Controle de gastos de viagens e visitas</p>
         </div>
         <Button onClick={() => setOpen(true)}><Plus size={15} /> Nova despesa</Button>
       </div>
@@ -66,7 +66,7 @@ export default function Despesas() {
       <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1" title="Por categoria (mês)">
           {byCategory.length === 0 ? (
-            <p className="py-6 text-center text-[12.5px] text-[#8F8676]">Sem despesas este mês.</p>
+            <p className="py-6 text-center text-[12.5px] text-[#6B7F93]">Sem despesas este mês.</p>
           ) : (
             <>
               <ResponsiveContainer width="100%" height={160}>
@@ -74,17 +74,17 @@ export default function Despesas() {
                   <Pie data={byCategory} dataKey="valor" nameKey="categoria" innerRadius={40} outerRadius={65} paddingAngle={2}>
                     {byCategory.map((c) => <Cell key={c.categoria} fill={CATEGORY_COLORS[c.categoria]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: '#F3EEE3', border: '1px solid #E4DCC8', borderRadius: 6, fontSize: 12 }} formatter={(v) => currency(Number(v))} />
+                  <Tooltip contentStyle={{ background: '#EAF3FC', border: '1px solid #CFE0F5', borderRadius: 6, fontSize: 12 }} formatter={(v) => currency(Number(v))} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="mt-2 space-y-1.5">
                 {byCategory.map((c) => (
                   <div key={c.categoria} className="flex items-center justify-between text-[12px]">
-                    <span className="flex items-center gap-1.5 text-[#5A5346]">
+                    <span className="flex items-center gap-1.5 text-[#33495E]">
                       <span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLORS[c.categoria] }} />
                       {EXPENSE_CATEGORY_LABEL[c.categoria]}
                     </span>
-                    <span className="mono text-[#8F8676]">{currency(c.valor)}</span>
+                    <span className="mono text-[#6B7F93]">{currency(c.valor)}</span>
                   </div>
                 ))}
               </div>
@@ -93,27 +93,27 @@ export default function Despesas() {
         </Card>
 
         <Card className="lg:col-span-2 !p-0 overflow-hidden">
-          <div className="hidden grid-cols-[0.8fr_1fr_1.4fr_0.8fr_40px] gap-3 border-b border-[#E4DCC8] px-5 py-3 text-[11.5px] font-medium text-[#8F8676] md:grid">
+          <div className="hidden grid-cols-[0.8fr_1fr_1.4fr_0.8fr_40px] gap-3 border-b border-[#CFE0F5] px-5 py-3 text-[11.5px] font-medium text-[#6B7F93] md:grid">
             <span>Data</span>
             <span>Categoria</span>
             <span>Descrição</span>
             <span>Valor</span>
             <span />
           </div>
-          <div className="max-h-[380px] divide-y divide-[#ECE5D6] overflow-y-auto">
+          <div className="max-h-[380px] divide-y divide-[#E1EDFB] overflow-y-auto">
             {sorted.map((e) => (
               <div key={e.id} className="grid grid-cols-2 gap-2 px-5 py-3 text-[13px] md:grid-cols-[0.8fr_1fr_1.4fr_0.8fr_40px] md:items-center md:gap-3">
-                <span className="text-[#8F8676]">{formatDate(e.data)}</span>
-                <span className="flex items-center gap-1.5 text-[#5A5346]">
+                <span className="text-[#6B7F93]">{formatDate(e.data)}</span>
+                <span className="flex items-center gap-1.5 text-[#33495E]">
                   <span className="h-2 w-2 rounded-full" style={{ background: CATEGORY_COLORS[e.categoria] }} />
                   {EXPENSE_CATEGORY_LABEL[e.categoria]}
                 </span>
-                <span className="truncate text-[#5A5346]">{e.descricao}</span>
-                <span className="mono text-[#D9695F]">{currency(e.valor)}</span>
-                <button onClick={() => deleteExpense(e.id)} className="justify-self-end text-[#8F8676] hover:text-[#D9695F]"><Trash2 size={13} /></button>
+                <span className="truncate text-[#33495E]">{e.descricao}</span>
+                <span className="mono text-[#EF4444]">{currency(e.valor)}</span>
+                <button onClick={() => deleteExpense(e.id)} className="justify-self-end text-[#6B7F93] hover:text-[#EF4444]"><Trash2 size={13} /></button>
               </div>
             ))}
-            {sorted.length === 0 && <div className="px-5 py-10 text-center text-[13px] text-[#8F8676]">Nenhuma despesa registrada.</div>}
+            {sorted.length === 0 && <div className="px-5 py-10 text-center text-[13px] text-[#6B7F93]">Nenhuma despesa registrada.</div>}
           </div>
         </Card>
       </div>

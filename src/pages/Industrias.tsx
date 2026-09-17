@@ -8,7 +8,7 @@ import { currency } from '../lib/date'
 import { orderTotal } from '../lib/calc'
 import type { Industry } from '../types'
 
-const COLOR_OPTIONS = ['#3B82F6', '#3FA9A0', '#5B8DEF', '#9B7FE0', '#D9695F', '#4FC97A']
+const COLOR_OPTIONS = ['#3B82F6', '#16A34A', '#5B8DEF', '#9B7FE0', '#EF4444', '#16A34A']
 
 function empty(): Omit<Industry, 'id'> {
   return { nome: '', cnpj: '', contatoNome: '', contatoTelefone: '', comissaoPadrao: 5, categorias: [], cor: COLOR_OPTIONS[0], condicaoPagamento: '', prazoEntregaDias: 10 }
@@ -46,7 +46,7 @@ export default function Industrias() {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-[20px] font-bold">Indústrias</h1>
-          <p className="mt-1 text-[13px] text-[#8F8676]">{industries.length} indústrias representadas</p>
+          <p className="mt-1 text-[13px] text-[#6B7F93]">{industries.length} indústrias representadas</p>
         </div>
         <Button onClick={openNew}><Plus size={15} /> Nova indústria</Button>
       </div>
@@ -65,16 +65,16 @@ export default function Industrias() {
                   </div>
                   <div>
                     <div className="text-[14px] font-semibold">{ind.nome}</div>
-                    <div className="text-[11.5px] text-[#8F8676]">{ind.cnpj}</div>
+                    <div className="text-[11.5px] text-[#6B7F93]">{ind.cnpj}</div>
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => openEdit(ind)} className="rounded-[6px] p-1.5 text-[#8F8676] hover:bg-[#F3EEE3] hover:text-[#2B2620]">
+                  <button onClick={() => openEdit(ind)} className="rounded-[6px] p-1.5 text-[#6B7F93] hover:bg-[#EAF3FC] hover:text-[#0F2A44]">
                     <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => confirm('Remover indústria?') && deleteIndustry(ind.id)}
-                    className="rounded-[6px] p-1.5 text-[#8F8676] hover:bg-[#D9695F]/10 hover:text-[#D9695F]"
+                    className="rounded-[6px] p-1.5 text-[#6B7F93] hover:bg-[#EF4444]/10 hover:text-[#EF4444]"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -82,24 +82,24 @@ export default function Industrias() {
               </div>
               <div className="mb-3 flex flex-wrap gap-1.5">
                 {ind.categorias.map((c) => (
-                  <span key={c} className="rounded-full border border-[#E4DCC8] px-2 py-0.5 text-[11px] text-[#8F8676]">{c}</span>
+                  <span key={c} className="rounded-full border border-[#CFE0F5] px-2 py-0.5 text-[11px] text-[#6B7F93]">{c}</span>
                 ))}
               </div>
-              <div className="grid grid-cols-3 gap-2 border-t border-[#ECE5D6] pt-3 text-center">
+              <div className="grid grid-cols-3 gap-2 border-t border-[#E1EDFB] pt-3 text-center">
                 <div>
                   <div className="text-[15px] font-semibold">{prodCount}</div>
-                  <div className="text-[10.5px] text-[#8F8676]">Produtos</div>
+                  <div className="text-[10.5px] text-[#6B7F93]">Produtos</div>
                 </div>
                 <div>
                   <div className="text-[15px] font-semibold">{clientCount}</div>
-                  <div className="text-[10.5px] text-[#8F8676]">Clientes</div>
+                  <div className="text-[10.5px] text-[#6B7F93]">Clientes</div>
                 </div>
                 <div>
                   <div className="text-[15px] font-semibold" style={{ color: ind.cor }}>{ind.comissaoPadrao}%</div>
-                  <div className="text-[10.5px] text-[#8F8676]">Comissão</div>
+                  <div className="text-[10.5px] text-[#6B7F93]">Comissão</div>
                 </div>
               </div>
-              <div className="mt-3 text-[11.5px] text-[#8F8676]">Faturamento total: <span className="mono text-[#5A5346]">{currency(revenue)}</span></div>
+              <div className="mt-3 text-[11.5px] text-[#6B7F93]">Faturamento total: <span className="mono text-[#33495E]">{currency(revenue)}</span></div>
             </Card>
           )
         })}
@@ -141,7 +141,7 @@ export default function Industrias() {
                 key={c}
                 onClick={() => setForm({ ...form, cor: c })}
                 className="h-7 w-7 rounded-full border-2"
-                style={{ background: c, borderColor: form.cor === c ? '#2B2620' : 'transparent' }}
+                style={{ background: c, borderColor: form.cor === c ? '#0F2A44' : 'transparent' }}
               />
             ))}
           </div>

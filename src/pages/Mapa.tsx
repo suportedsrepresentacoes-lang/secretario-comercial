@@ -13,7 +13,7 @@ function dotIcon(color: string, big = false) {
   const size = big ? 22 : 16
   return L.divIcon({
     className: '',
-    html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:${color};border:2px solid #2B2620;box-shadow:0 0 0 2px ${color}55"></div>`,
+    html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:${color};border:2px solid #0F2A44;box-shadow:0 0 0 2px ${color}55"></div>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   })
@@ -30,7 +30,7 @@ export default function Mapa() {
 
   const homeIcon = useMemo(() => L.divIcon({
     className: '',
-    html: `<div style="width:20px;height:20px;border-radius:6px;background:#3B82F6;border:2px solid #2B2620;display:flex;align-items:center;justify-content:center;color:#2B2620;font-weight:800;font-size:10px">DS</div>`,
+    html: `<div style="width:20px;height:20px;border-radius:6px;background:#3B82F6;border:2px solid #0F2A44;display:flex;align-items:center;justify-content:center;color:#0F2A44;font-weight:800;font-size:10px">DS</div>`,
     iconSize: [20, 20],
     iconAnchor: [10, 10],
   }), [])
@@ -40,7 +40,7 @@ export default function Mapa() {
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-[20px] font-bold">Mapa</h1>
-          <p className="mt-1 text-[13px] text-[#8F8676]">{filtered.length} clientes exibidos</p>
+          <p className="mt-1 text-[13px] text-[#6B7F93]">{filtered.length} clientes exibidos</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {STATUS_FILTERS.map((s) => (
@@ -53,7 +53,7 @@ export default function Mapa() {
                   ? s === 'todos'
                     ? { borderColor: '#3B82F655', background: '#3B82F61A', color: '#3B82F6' }
                     : { borderColor: `${STATUS_COLOR[s]}55`, background: `${STATUS_COLOR[s]}1A`, color: STATUS_COLOR[s] }
-                  : { borderColor: '#E4DCC8', color: '#8F8676' }
+                  : { borderColor: '#CFE0F5', color: '#6B7F93' }
               }
             >
               {s === 'todos' ? 'Todos' : STATUS_LABEL[s]}
@@ -62,7 +62,7 @@ export default function Mapa() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden rounded-md border border-[#E4DCC8]">
+      <div className="flex-1 overflow-hidden rounded-md border border-[#CFE0F5]">
         <MapContainer center={[HOME_BASE.lat, HOME_BASE.lng]} zoom={9} style={{ height: '100%', width: '100%' }}>
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -78,7 +78,7 @@ export default function Mapa() {
                 <Popup>
                   <div style={{ minWidth: 180 }}>
                     <div style={{ fontWeight: 700, marginBottom: 2 }}>{c.nomeFantasia ?? c.razaoSocial}</div>
-                    <div style={{ fontSize: 12, color: '#8F8676', marginBottom: 6 }}>{c.segmento} · {c.endereco.cidade}/{c.endereco.uf}</div>
+                    <div style={{ fontSize: 12, color: '#6B7F93', marginBottom: 6 }}>{c.segmento} · {c.endereco.cidade}/{c.endereco.uf}</div>
                     <div style={{ fontSize: 12, marginBottom: 6 }}>
                       Status: <strong>{STATUS_LABEL[c.status]}</strong>
                     </div>
@@ -86,7 +86,7 @@ export default function Mapa() {
                     <div style={{ fontSize: 12, marginBottom: 8 }}>{orderCount} pedido(s) no histórico</div>
                     <button
                       onClick={() => navigate(`/clientes?id=${c.id}`)}
-                      style={{ background: '#3B82F6', color: '#2B2620', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}
+                      style={{ background: '#3B82F6', color: '#0F2A44', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}
                     >
                       Ver cliente
                     </button>

@@ -4,7 +4,7 @@ import TopNav from './TopNav'
 export default function AppShell() {
   return (
     <div
-      className="flex min-h-dvh w-full flex-col bg-[#F7F4EE] text-[#2B2620]"
+      className="flex min-h-dvh w-full flex-col bg-[#F2F7FD] text-[#0F2A44]"
       style={{ fontFamily: "'Manrope', ui-sans-serif, system-ui, sans-serif" }}
     >
       <TopNav />

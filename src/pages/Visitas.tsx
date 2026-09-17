@@ -11,8 +11,8 @@ import type { Visit, VisitStatus } from '../types'
 
 const STATUS_COLOR: Record<VisitStatus, string> = {
   agendada: '#5B8DEF',
-  realizada: '#3FA9A0',
-  cancelada: '#D9695F',
+  realizada: '#16A34A',
+  cancelada: '#EF4444',
   reagendada: '#3B82F6',
 }
 
@@ -70,15 +70,15 @@ export default function Visitas() {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-[20px] font-bold">Visitas</h1>
-          <p className="mt-1 text-[13px] text-[#8F8676]">{visits.length} visitas registradas</p>
+          <p className="mt-1 text-[13px] text-[#6B7F93]">{visits.length} visitas registradas</p>
         </div>
         <Button onClick={() => { setNewForm(emptyNew(clients[0]?.id ?? '')); setNewOpen(true) }}><Plus size={15} /> Agendar visita</Button>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-1.5">
-        <button onClick={() => setStatusFilter('todos')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${statusFilter === 'todos' ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]' : 'border-[#E4DCC8] text-[#8F8676]'}`}>Todas</button>
+        <button onClick={() => setStatusFilter('todos')} className={`rounded-full border px-2.5 py-1 text-[11.5px] ${statusFilter === 'todos' ? 'border-[#3B82F6]/50 bg-[#3B82F6]/15 text-[#3B82F6]' : 'border-[#CFE0F5] text-[#6B7F93]'}`}>Todas</button>
         {(Object.keys(VISIT_STATUS_LABEL) as VisitStatus[]).map((s) => (
-          <button key={s} onClick={() => setStatusFilter(s)} className="rounded-full border px-2.5 py-1 text-[11.5px]" style={statusFilter === s ? { borderColor: `${STATUS_COLOR[s]}55`, background: `${STATUS_COLOR[s]}1A`, color: STATUS_COLOR[s] } : { borderColor: '#E4DCC8', color: '#8F8676' }}>
+          <button key={s} onClick={() => setStatusFilter(s)} className="rounded-full border px-2.5 py-1 text-[11.5px]" style={statusFilter === s ? { borderColor: `${STATUS_COLOR[s]}55`, background: `${STATUS_COLOR[s]}1A`, color: STATUS_COLOR[s] } : { borderColor: '#CFE0F5', color: '#6B7F93' }}>
             {VISIT_STATUS_LABEL[s]}
           </button>
         ))}
@@ -96,7 +96,7 @@ export default function Visitas() {
                   </div>
                   <div>
                     <div className="text-[13.5px] font-medium">{client?.nomeFantasia ?? client?.razaoSocial}</div>
-                    <div className="mono text-[11.5px] text-[#8F8676]">{formatDateTime(v.dataHora)}</div>
+                    <div className="mono text-[11.5px] text-[#6B7F93]">{formatDateTime(v.dataHora)}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -108,12 +108,12 @@ export default function Visitas() {
                   )}
                 </div>
               </div>
-              {v.resultado && <p className="mt-3 border-t border-[#ECE5D6] pt-3 text-[12.5px] text-[#5A5346]">{v.resultado}</p>}
-              {v.proximaAcao && <p className="mt-1 text-[11.5px] text-[#8F8676]">Próxima ação: {v.proximaAcao}</p>}
+              {v.resultado && <p className="mt-3 border-t border-[#E1EDFB] pt-3 text-[12.5px] text-[#33495E]">{v.resultado}</p>}
+              {v.proximaAcao && <p className="mt-1 text-[11.5px] text-[#6B7F93]">Próxima ação: {v.proximaAcao}</p>}
             </Card>
           )
         })}
-        {filtered.length === 0 && <p className="py-10 text-center text-[13px] text-[#8F8676]">Nenhuma visita encontrada.</p>}
+        {filtered.length === 0 && <p className="py-10 text-center text-[13px] text-[#6B7F93]">Nenhuma visita encontrada.</p>}
       </div>
 
       <Drawer
@@ -146,7 +146,7 @@ export default function Visitas() {
                         : [...outcome.produtosApresentadosIds, p.id],
                     })
                   }
-                  className={`rounded-full border px-2.5 py-1 text-[11px] ${checked ? 'border-[#3FA9A0]/50 bg-[#3FA9A0]/15 text-[#3FA9A0]' : 'border-[#E4DCC8] text-[#8F8676]'}`}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] ${checked ? 'border-[#16A34A]/50 bg-[#16A34A]/15 text-[#16A34A]' : 'border-[#CFE0F5] text-[#6B7F93]'}`}
                 >
                   {p.nome}
                 </button>
