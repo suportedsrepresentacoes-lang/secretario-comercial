@@ -1,19 +1,18 @@
-export interface GeoResult {
+export interface Coordinates {
   lat: number
   lng: number
   accuracyM: number
 }
 
-export function getCurrentLocation(): Promise<GeoResult> {
+// Pede a localização atual uma única vez (sem rastreamento contínuo em segundo plano).
+export function getCurrentPosition(): Promise<Coordinates> {
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) {
       reject(new Error('Este navegador não suporta geolocalização.'))
       return
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracyM: pos.coords.accuracy })
-      },
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracyM: pos.coords.accuracy }),
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
           reject(new Error('Permissão de localização negada. Habilite o acesso à localização no navegador.'))

@@ -1,6 +1,6 @@
-﻿import type { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
-export default function Card({
+export function Card({
   children,
   className = '',
   title,
@@ -12,14 +12,10 @@ export default function Card({
   action?: ReactNode
 }) {
   return (
-    <div className={`rounded-md border border-[#E4DCC8] bg-[#FFFFFF] p-5 ${className}`}>
+    <div className={`rounded-xl border border-[#CFE0F5] bg-white p-5 ${className}`}>
       {(title || action) && (
         <div className="mb-4 flex items-center justify-between">
-          {typeof title === 'string' ? (
-            <span className="text-[13px] font-medium text-[#5A5346]">{title}</span>
-          ) : (
-            title
-          )}
+          {typeof title === 'string' ? <span className="text-[13px] font-medium text-[#33495E]">{title}</span> : title}
           {action}
         </div>
       )}
