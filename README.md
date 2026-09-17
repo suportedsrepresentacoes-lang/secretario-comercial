@@ -16,8 +16,8 @@ Interface **azul-claro + branco**, mobile-first, com poucas cores adicionais e f
 - Tailwind CSS v4 (tokens de cor em `src/index.css`)
 - Zustand (estado global único, persistido em `localStorage`)
 - React Router (navegação por hash)
-- React Leaflet + OpenStreetMap (mapa e rotas, sem chave de API)
-- Overpass API / OpenStreetMap (busca real de estabelecimentos por segmento — a cobertura depende do quanto a região está mapeada no OSM)
+- React Leaflet + OpenStreetMap (desenho do mapa e rotas, sem chave de API)
+- Google Places API (Text Search) para a busca de estabelecimentos por segmento — requer uma chave de API própria (variável `VITE_GOOGLE_PLACES_API_KEY`, injetada em build a partir do segredo `GOOGLE_PLACES_API_KEY` no GitHub Actions). Cobertura de comércio muito melhor que dados livres, principalmente em cidades pequenas, ao custo de depender de uma API paga com cota gratuita mensal.
 - @hello-pangea/dnd (reordenar paradas da rota)
 - vite-plugin-pwa (aplicativo instalável / offline)
 
@@ -26,7 +26,7 @@ Arquitetura modular, separando claramente cada responsabilidade:
 ```
 src/
   types/        modelo de dados (cliente, rota, despesa, veículo, prospecção)
-  services/     geolocalização, geocodificação, busca de lugares (Overpass),
+  services/     geolocalização, geocodificação, busca de lugares (Google Places),
                 roteirização/otimização, Street View, navegação — cada um
                 isolado e reutilizável, sem depender de nenhuma API paga
   store/        estado global (Zustand), persistido no dispositivo
@@ -54,6 +54,13 @@ Os dados ficam salvos no navegador via `localStorage` — protótipo sem backend
 Para não transformar o produto num ERP/CRM gigantesco antes da hora: filtros combinados avançados (ex. distância + tags + segmento ao mesmo tempo), alerta automático de proximidade (exigiria rastreamento contínuo de localização, evitado de propósito) e rotas recorrentes por dia da semana. São evoluções naturais dos módulos de Clientes/Rotas já existentes.
 
 ## Como rodar
+
+A busca de estabelecimentos precisa de uma chave da Google Places API. Para rodar localmente, crie
+um arquivo `.env.local` (não versionado) na raiz do projeto:
+
+```
+VITE_GOOGLE_PLACES_API_KEY=sua-chave-aqui
+```
 
 ```bash
 npm install

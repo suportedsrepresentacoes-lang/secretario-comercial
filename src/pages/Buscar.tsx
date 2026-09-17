@@ -10,7 +10,7 @@ import { Button } from '../components/ui/Button'
 import { LocationButtons } from '../components/ui/LocationButtons'
 import { getCurrentPosition } from '../services/geolocation'
 import { searchAddress, addressAt, type AddressMatch } from '../services/geocoding'
-import { searchPlaces, overpassTurboUrl, overpassAnyShopDebugUrl } from '../services/places'
+import { searchGooglePlaces, hasGooglePlacesKey } from '../services/googlePlaces'
 import { openNavigation } from '../services/navigation'
 import { openStreetView } from '../services/streetView'
 import { searchSegments, customSegment } from '../data/segments'
@@ -64,7 +64,6 @@ export default function Buscar() {
   const [slowSearch, setSlowSearch] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [results, setResults] = useState<Establishment[]>([])
-  const [lastQuery, setLastQuery] = useState<string | null>(null)
   const [partialResults, setPartialResults] = useState(false)
   const [savedAsClient, setSavedAsClient] = useState<Set<string>>(new Set())
   const abortRef = useRef<AbortController | null>(null)
@@ -138,11 +137,10 @@ export default function Buscar() {
     setPartialResults(false)
     const slowTimer = setTimeout(() => setSlowSearch(true), 4000)
     try {
-      const { results: found, query, partial } = await searchPlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
+      const { results: found, partial } = await searchGooglePlaces(selectedSegments, draftOrigin, atRadiusKm, controller.signal)
       if (controller.signal.aborted) return
       setResults(found)
       setSearchedRadiusKm(atRadiusKm)
-      setLastQuery(query)
       setPartialResults(partial)
       if (found.length === 0) setSearchError('Nenhum estabelecimento encontrado nessa região. Tente aumentar o raio ou escolher outros segmentos.')
     } catch (err) {
@@ -311,24 +309,20 @@ export default function Buscar() {
               <p className="flex items-center gap-1.5">
                 <MapPin size={12} className="shrink-0" /> Buscando a partir de: <strong className="text-[#0F2A44]">{originLabel ?? 'local de partida definido'}</strong> · raio {radiusKm} km
               </p>
-              <p className="mono mt-1 flex flex-wrap items-center gap-x-2 pl-[18px] text-[11px] text-[#93A5BC]">
-                <span>coordenadas: {draftOrigin.lat.toFixed(5)}, {draftOrigin.lng.toFixed(5)}</span>
-                <a
-                  href={overpassAnyShopDebugUrl(draftOrigin, radiusKm)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-sans font-medium text-[#3B82F6] underline decoration-dotted"
-                >
-                  ver qualquer loja no OSM aqui perto
-                </a>
-              </p>
+              <p className="mono mt-1 pl-[18px] text-[11px] text-[#93A5BC]">coordenadas: {draftOrigin.lat.toFixed(5)}, {draftOrigin.lng.toFixed(5)}</p>
             </div>
+          )}
+
+          {!hasGooglePlacesKey() && (
+            <p className="flex items-start gap-1.5 rounded-[8px] border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-3 py-2 text-[11.5px] text-[#B45309]">
+              <AlertCircle size={13} className="mt-0.5 shrink-0" /> Chave da API do Google Places não configurada. A busca não vai funcionar até o segredo <code className="mono">GOOGLE_PLACES_API_KEY</code> ser adicionado no GitHub.
+            </p>
           )}
 
           <Button className="w-full" disabled={!draftOrigin || selectedSegments.length === 0 || searching} onClick={handleSearch}>
             <Search size={15} /> {searching ? 'Buscando…' : 'Buscar Clientes na Região'}
           </Button>
-          {slowSearch && <p className="text-center text-[11.5px] text-[#6B7F93]">O OpenStreetMap está respondendo devagar agora — pode levar mais alguns segundos…</p>}
+          {slowSearch && <p className="text-center text-[11.5px] text-[#6B7F93]">A busca está demorando mais que o normal — pode levar mais alguns segundos…</p>}
 
           {draftStops.length > 0 && (
             <Button variant="secondary" className="w-full" onClick={() => navigate('/rotas')}>
@@ -400,16 +394,7 @@ export default function Buscar() {
             {!searching && partialResults && (
               <div className="flex items-start gap-2 border-b border-[#E1EDFB] px-4 py-2.5 text-[12px] text-[#B45309]">
                 <AlertCircle size={13} className="mt-0.5 shrink-0" />
-                <span className="flex-1">Algumas categorias não responderam (servidor sobrecarregado) — os resultados abaixo podem estar incompletos. <button onClick={() => runSearch(searchedRadiusKm ?? radiusKm)} className="font-medium text-[#3B82F6] underline decoration-dotted">tentar de novo</button></span>
-              </div>
-            )}
-            {!searching && results.length === 0 && lastQuery && (
-              <div className="border-b border-[#E1EDFB] px-4 py-3 text-[12px] text-[#6B7F93]">
-                Se você sabe que existem empresas dessa categoria aqui perto, confira os dados brutos do OpenStreetMap para esta busca:{' '}
-                <a href={overpassTurboUrl(lastQuery)} target="_blank" rel="noopener noreferrer" className="font-medium text-[#3B82F6] underline decoration-dotted">
-                  abrir no Overpass Turbo
-                </a>
-                . Se aparecer vazio lá também, as empresas ainda não estão cadastradas no mapa livre (não é um problema do CampoVista); tente também "Outro segmento…" com o nome de uma loja específica.
+                <span className="flex-1">Algumas categorias não responderam — os resultados abaixo podem estar incompletos. <button onClick={() => runSearch(searchedRadiusKm ?? radiusKm)} className="font-medium text-[#3B82F6] underline decoration-dotted">tentar de novo</button></span>
               </div>
             )}
             <div className="max-h-[420px] divide-y divide-[#E1EDFB] overflow-y-auto">

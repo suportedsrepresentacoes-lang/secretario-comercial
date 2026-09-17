@@ -49,8 +49,9 @@ export function searchSegments(query: string): Segment[] {
   return SEGMENTS.filter((s) => s.label.toLowerCase().includes(q))
 }
 
-// Cria um segmento "Outro" a partir de texto livre digitado pelo usuário. Sem uma tag OSM
-// conhecida, a busca cai para correspondência pelo nome do local (ver services/places.ts).
+// Cria um segmento "Outro" a partir de texto livre digitado pelo usuário — a busca por texto do
+// Google Places (ver services/googlePlaces.ts) usa o rótulo diretamente, então funciona igual aos
+// segmentos predefinidos.
 export function customSegment(label: string): Segment {
   return { id: `custom-${label.toLowerCase().trim().replace(/\s+/g, '-')}`, label: label.trim(), osmTags: [] }
 }
