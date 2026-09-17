@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus, Search, MapPin, Pencil, Trash2, Route as RouteIcon, Check } from 'lucide-react'
+import { Plus, Search, MapPin, Pencil, Trash2, Route as RouteIcon, Check, LocateFixed, AlertCircle } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
 import { Card } from '../components/ui/Card'
 import { Sheet } from '../components/ui/Sheet'
@@ -8,6 +8,8 @@ import { Badge, Tag } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Field, Input, Select, Textarea } from '../components/ui/Field'
 import { LocationButtons } from '../components/ui/LocationButtons'
+import { getCurrentPosition } from '../services/geolocation'
+import { searchAddress, type AddressMatch } from '../services/geocoding'
 import { CLIENT_STATUS_LABEL, CLIENT_STATUS_COLOR, STOP_STATUS_LABEL, SUGGESTED_TAGS } from '../lib/labels'
 import { daysAgo, formatDate } from '../lib/format'
 import type { Client, ClientStatus } from '../types'
@@ -38,6 +40,12 @@ export default function Clientes() {
   const [editing, setEditing] = useState<Client | null>(null)
   const [form, setForm] = useState(emptyClient())
   const [tagDraft, setTagDraft] = useState('')
+  const [hasLocation, setHasLocation] = useState(false)
+  const [locating, setLocating] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
+  const [addressQuery, setAddressQuery] = useState('')
+  const [addressResults, setAddressResults] = useState<AddressMatch[]>([])
+  const [addressSearching, setAddressSearching] = useState(false)
 
   const detailId = params.get('id')
   const detailClient = clients.find((c) => c.id === detailId) ?? null
@@ -61,11 +69,51 @@ export default function Clientes() {
   function openDetail(id: string) { setParams({ id }) }
   function closeDetail() { params.delete('id'); setParams(params) }
 
-  function openNewForm() { setEditing(null); setForm(emptyClient()); setFormOpen(true) }
-  function openEditForm(c: Client) { setEditing(c); setForm(c); setFormOpen(true) }
+  function resetLocationPicker() {
+    setLocating(false)
+    setLocationError(null)
+    setAddressQuery('')
+    setAddressResults([])
+  }
+  function openNewForm() { setEditing(null); setForm(emptyClient()); setHasLocation(false); resetLocationPicker(); setFormOpen(true) }
+  function openEditForm(c: Client) { setEditing(c); setForm(c); setHasLocation(true); resetLocationPicker(); setFormOpen(true) }
+
+  async function handleLocateForClient() {
+    setLocating(true)
+    setLocationError(null)
+    try {
+      const pos = await getCurrentPosition()
+      setForm((f) => ({ ...f, endereco: { ...f.endereco, lat: pos.lat, lng: pos.lng } }))
+      setHasLocation(true)
+    } catch (err) {
+      setLocationError(err instanceof Error ? err.message : 'Não foi possível obter sua localização.')
+    } finally {
+      setLocating(false)
+    }
+  }
+
+  async function handleAddressSearchForClient() {
+    if (addressQuery.trim().length < 3) return
+    setAddressSearching(true)
+    try {
+      setAddressResults(await searchAddress(addressQuery))
+    } catch {
+      setAddressResults([])
+    } finally {
+      setAddressSearching(false)
+    }
+  }
+
+  function pickAddressResult(r: AddressMatch) {
+    setForm((f) => ({ ...f, endereco: { ...f.endereco, lat: r.lat, lng: r.lng } }))
+    setHasLocation(true)
+    setAddressResults([])
+    setAddressQuery('')
+  }
 
   function submitForm() {
     if (!form.nomeFantasia.trim() || !form.endereco.cidade.trim()) return
+    if (!hasLocation) { setLocationError('Defina a localização (GPS ou busca de endereço) antes de salvar — sem isso o cliente não aparece certo no mapa e na rota.'); return }
     if (editing) updateClient(editing.id, form)
     else addClient(form)
     setFormOpen(false)
@@ -239,6 +287,46 @@ export default function Clientes() {
         </Field>
 
         <div className="mb-1.5 mt-2 text-[12px] font-medium text-[#6B7F93]">Endereço</div>
+
+        <div className="mb-3">
+          {hasLocation ? (
+            <div className="flex items-center justify-between gap-2 rounded-[8px] border border-[#16A34A]/30 bg-[#16A34A]/10 px-3 py-2 text-[12px] text-[#16A34A]">
+              <span className="flex items-center gap-1.5"><MapPin size={13} /> Localização definida ({form.endereco.lat.toFixed(5)}, {form.endereco.lng.toFixed(5)})</span>
+              <button onClick={() => setHasLocation(false)} className="shrink-0 text-[11px] underline decoration-dotted">alterar</button>
+            </div>
+          ) : (
+            <>
+              <Button type="button" variant="secondary" className="mb-2 w-full" onClick={handleLocateForClient} disabled={locating}>
+                <LocateFixed size={14} /> {locating ? 'Localizando…' : 'Usar minha localização atual (estou no local)'}
+              </Button>
+              <div className="relative">
+                <div className="flex items-center gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2 text-[13px] text-[#6B7F93]">
+                  <Search size={14} />
+                  <input
+                    value={addressQuery}
+                    onChange={(e) => setAddressQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddressSearchForClient())}
+                    placeholder="Ou buscar endereço para localizar…"
+                    className="w-full bg-transparent text-[#0F2A44] outline-none placeholder:text-[#6B7F93]"
+                  />
+                  <button type="button" onClick={handleAddressSearchForClient} className="shrink-0 text-[11px] font-medium text-[#3B82F6]">{addressSearching ? '...' : 'buscar'}</button>
+                </div>
+                {addressResults.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[8px] border border-[#CFE0F5] bg-white shadow-xl">
+                    {addressResults.map((r, i) => (
+                      <button key={i} type="button" onClick={() => pickAddressResult(r)} className="flex w-full items-start gap-2 px-3 py-2 text-left text-[12px] hover:bg-[#EAF3FC]">
+                        <MapPin size={13} className="mt-0.5 shrink-0 text-[#6B7F93]" />
+                        <span className="text-[#0F2A44]">{r.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {locationError && <p className="mt-1.5 flex items-start gap-1.5 text-[11px] text-[#EF4444]"><AlertCircle size={12} className="mt-0.5 shrink-0" /> {locationError}</p>}
+            </>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <Field label="Logradouro"><Input value={form.endereco.logradouro} onChange={(e) => setForm({ ...form, endereco: { ...form.endereco, logradouro: e.target.value } })} /></Field>
           <Field label="Número"><Input value={form.endereco.numero ?? ''} onChange={(e) => setForm({ ...form, endereco: { ...form.endereco, numero: e.target.value } })} /></Field>
