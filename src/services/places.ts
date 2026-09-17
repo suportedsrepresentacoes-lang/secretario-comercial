@@ -171,6 +171,14 @@ export function overpassTurboUrl(query: string): string {
   return `https://overpass-turbo.eu/?Q=${encodeURIComponent(query)}&R`
 }
 
+// Consulta ampla (qualquer shop=*, sem filtrar categoria) — diagnóstico independente da busca do
+// app: mostra se o OpenStreetMap tem alguma loja cadastrada na região, ponto.
+export function overpassAnyShopDebugUrl(origin: { lat: number; lng: number }, radiusKm: number): string {
+  const radiusM = Math.round(radiusKm * 1000)
+  const query = `[out:json][timeout:25];\n(\n  node["shop"](around:${radiusM},${origin.lat},${origin.lng});\n  way["shop"](around:${radiusM},${origin.lat},${origin.lng});\n);\nout center tags 100;`
+  return overpassTurboUrl(query)
+}
+
 // Busca estabelecimentos num raio exato a partir da origem informada — sem nenhuma expansão
 // automática. O raio buscado é sempre exatamente o raio pedido pelo usuário.
 export async function searchPlaces(

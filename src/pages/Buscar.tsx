@@ -10,7 +10,7 @@ import { Button } from '../components/ui/Button'
 import { LocationButtons } from '../components/ui/LocationButtons'
 import { getCurrentPosition } from '../services/geolocation'
 import { searchAddress, addressAt, type AddressMatch } from '../services/geocoding'
-import { searchPlaces, overpassTurboUrl } from '../services/places'
+import { searchPlaces, overpassTurboUrl, overpassAnyShopDebugUrl } from '../services/places'
 import { openNavigation } from '../services/navigation'
 import { openStreetView } from '../services/streetView'
 import { searchSegments, customSegment } from '../data/segments'
@@ -304,9 +304,22 @@ export default function Buscar() {
           </Card>
 
           {draftOrigin && (
-            <p className="flex items-center gap-1.5 text-[12px] text-[#6B7F93]">
-              <MapPin size={12} className="shrink-0" /> Buscando a partir de: <strong className="text-[#0F2A44]">{originLabel ?? 'local de partida definido'}</strong> · raio {radiusKm} km
-            </p>
+            <div className="text-[12px] text-[#6B7F93]">
+              <p className="flex items-center gap-1.5">
+                <MapPin size={12} className="shrink-0" /> Buscando a partir de: <strong className="text-[#0F2A44]">{originLabel ?? 'local de partida definido'}</strong> · raio {radiusKm} km
+              </p>
+              <p className="mono mt-1 flex flex-wrap items-center gap-x-2 pl-[18px] text-[11px] text-[#93A5BC]">
+                <span>coordenadas: {draftOrigin.lat.toFixed(5)}, {draftOrigin.lng.toFixed(5)}</span>
+                <a
+                  href={overpassAnyShopDebugUrl(draftOrigin, radiusKm)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-sans font-medium text-[#3B82F6] underline decoration-dotted"
+                >
+                  ver qualquer loja no OSM aqui perto
+                </a>
+              </p>
+            </div>
           )}
 
           <Button className="w-full" disabled={!draftOrigin || selectedSegments.length === 0 || searching} onClick={handleSearch}>
