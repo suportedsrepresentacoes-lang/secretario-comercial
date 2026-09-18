@@ -48,11 +48,10 @@ function clientToStop(c: Client): DraftStop {
 type StopStatusPatch = Partial<Pick<RouteStop, 'status' | 'observacao' | 'resultado'>>
 
 function StopVisitCard({
-  routeId, stop, index, onStartVisit, onUpdateStatus,
+  routeId, stop, onStartVisit, onUpdateStatus,
 }: {
   routeId: string
   stop: RouteStop
-  index: number
   onStartVisit: (routeId: string, stopId: string) => void
   onUpdateStatus: (routeId: string, stopId: string, patch: StopStatusPatch) => void
 }) {
@@ -71,12 +70,6 @@ function StopVisitCard({
   return (
     <div className="rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] p-3">
       <div className="flex items-center gap-2.5">
-        <span
-          className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-[#0F2A44]"
-          style={{ background: STOP_STATUS_COLOR[stop.status] }}
-        >
-          {index + 1}
-        </span>
         <div className="min-w-0 flex-1">
           <div className="truncate text-[13px] text-[#0F2A44]">{stop.nome}</div>
           <div className="truncate text-[11px] text-[#6B7F93]">{stop.endereco}</div>
@@ -257,8 +250,8 @@ export default function Rotas() {
       <>
         <button onClick={() => navigate('/historico')} className="mb-3 text-[12.5px] text-[#6B7F93] hover:text-[#33495E]">← Ver histórico de rotas</button>
 
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+        <div className="mb-4 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             {editingName ? (
               <div className="flex items-center gap-2">
                 <Input value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} className="!w-56" />
@@ -266,27 +259,39 @@ export default function Rotas() {
                 <button onClick={() => setEditingName(false)} className="text-[#6B7F93]"><X size={16} /></button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <h1 className="text-[20px] font-bold">{r.nome}</h1>
-                {!isDone && <button onClick={() => { setNameDraft(r.nome); setEditingName(true) }} className="text-[#6B7F93] hover:text-[#0F2A44]"><Pencil size={14} /></button>}
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-[19px] font-bold leading-tight">{r.nome}</h1>
+                {!isDone && <button onClick={() => { setNameDraft(r.nome); setEditingName(true) }} className="text-[#6B7F93] hover:text-[#0F2A44]"><Pencil size={13} /></button>}
+                <span
+                  className="rounded-full px-2 py-0.5 text-[11px] font-medium"
+                  style={{ background: isDone ? '#E1EDFB' : isActive ? '#16A34A1A' : '#3B82F61A', color: isDone ? '#6B7F93' : isActive ? '#16A34A' : '#3B82F6' }}
+                >
+                  {isDone ? 'Finalizada' : isActive ? 'Em andamento' : 'Não iniciada'}
+                </span>
               </div>
             )}
-            <p className="mt-1 flex items-center gap-1.5 text-[13px] text-[#6B7F93]">
-              <span
-                className="rounded-full px-2 py-0.5 text-[11px] font-medium"
-                style={{ background: isDone ? '#E1EDFB' : isActive ? '#16A34A1A' : '#3B82F61A', color: isDone ? '#6B7F93' : isActive ? '#16A34A' : '#3B82F6' }}
-              >
-                {isDone ? 'Finalizada' : isActive ? 'Em andamento' : 'Não iniciada'}
-              </span>
-              · {r.paradas.length} paradas · {r.distanciaKm} km · ~{Math.round((r.duracaoMin / 60) * 10) / 10}h
-              {isActive && <> · {visitedCount}/{r.paradas.length} registradas</>}
+            <p className="mt-1 text-[12.5px] text-[#6B7F93]">
+              {r.paradas.length} paradas · {r.distanciaKm} km · ~{Math.round((r.duracaoMin / 60) * 10) / 10}h
+              {isActive && <> · {visitedCount}/{r.paradas.length} visitas</>}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex shrink-0 gap-2">
             {isPlanned && <Button variant="secondary" onClick={() => optimizeRoute(r.id)}><Wand2 size={14} /> Otimizar rota</Button>}
             {isActive && <Button onClick={handleFinishRoute}><Flag size={14} /> Finalizar rota</Button>}
           </div>
         </div>
+
+        {isActive && r.paradas.length > 0 && (
+          <div className="mb-4">
+            <div className="mb-1.5 flex items-center justify-between text-[11px] font-medium text-[#33495E]">
+              <span>Progresso da rota</span>
+              <span className="text-[#16A34A]">{visitedCount}/{r.paradas.length}</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#E1EDFB]">
+              <div className="h-full rounded-full bg-[#16A34A] transition-all" style={{ width: `${(visitedCount / r.paradas.length) * 100}%` }} />
+            </div>
+          </div>
+        )}
 
         {isPlanned && (
           <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2.5 text-[12.5px]">
@@ -353,10 +358,14 @@ export default function Rotas() {
         )}
 
         {isActive && (
-          <div className="mb-4 flex items-center gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2.5">
-            <Gauge size={14} className="shrink-0 text-[#6B7F93]" />
-            <span className="shrink-0 text-[12px] text-[#33495E]">Km real percorrido (opcional, ao finalizar)</span>
-            <Input type="number" step="0.1" placeholder={`${r.distanciaKm} km planejados`} value={kmRealInput} onChange={(e) => setKmRealInput(e.target.value)} className="!w-32" />
+          <div className="mb-4 flex items-center justify-between gap-3 text-[12.5px]">
+            <span className="flex items-center gap-1.5 text-[#33495E]">
+              <Gauge size={13} className="shrink-0 text-[#6B7F93]" /> Km real percorrido <span className="text-[#93A5BC]">(opcional)</span>
+            </span>
+            <div className="flex shrink-0 items-center gap-2">
+              <Input type="number" step="0.1" placeholder={`${r.distanciaKm}`} value={kmRealInput} onChange={(e) => setKmRealInput(e.target.value)} className="!w-20 !py-1.5 text-center" />
+              <span className="text-[11px] text-[#93A5BC]">planejado: {r.distanciaKm} km</span>
+            </div>
           </div>
         )}
 
@@ -423,9 +432,22 @@ export default function Rotas() {
                   </Droppable>
                 </DragDropContext>
               ) : isActive ? (
-                <div className="space-y-2">
+                <div>
                   {r.paradas.map((p, idx) => (
-                    <StopVisitCard key={p.id} routeId={r.id} stop={p} index={idx} onStartVisit={startStopVisit} onUpdateStatus={updateStopStatus} />
+                    <div key={p.id} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <span
+                          className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-[#0F2A44]"
+                          style={{ background: STOP_STATUS_COLOR[p.status] }}
+                        >
+                          {idx + 1}
+                        </span>
+                        {idx < r.paradas.length - 1 && <div className="my-1 w-px flex-1 bg-[#CFE0F5]" />}
+                      </div>
+                      <div className="min-w-0 flex-1 pb-3">
+                        <StopVisitCard routeId={r.id} stop={p} onStartVisit={startStopVisit} onUpdateStatus={updateStopStatus} />
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -451,17 +473,21 @@ export default function Rotas() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <Card title="Resumo">
-              <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] py-3">
-                  <Gauge size={15} className="mx-auto mb-1 text-[#16A34A]" />
-                  <div className="text-[15px] font-semibold">{r.distanciaKm} km</div>
-                  <div className="text-[10.5px] text-[#6B7F93]">distância total</div>
+            <Card title="Resumo da rota">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Gauge size={16} className="shrink-0 text-[#16A34A]" />
+                  <div>
+                    <div className="text-[15px] font-semibold text-[#0F2A44]">{r.distanciaKm} km</div>
+                    <div className="text-[10.5px] text-[#6B7F93]">distância</div>
+                  </div>
                 </div>
-                <div className="rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] py-3">
-                  <Clock size={15} className="mx-auto mb-1 text-[#3B82F6]" />
-                  <div className="text-[15px] font-semibold">{Math.round((r.duracaoMin / 60) * 10) / 10}h</div>
-                  <div className="text-[10.5px] text-[#6B7F93]">tempo estimado</div>
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="shrink-0 text-[#3B82F6]" />
+                  <div>
+                    <div className="text-[15px] font-semibold text-[#0F2A44]">~{Math.round((r.duracaoMin / 60) * 10) / 10}h</div>
+                    <div className="text-[10.5px] text-[#6B7F93]">tempo estimado</div>
+                  </div>
                 </div>
               </div>
               {r.kmRealPercorrido != null && (
@@ -483,21 +509,21 @@ export default function Rotas() {
                   <Input type="number" step="0.01" value={r.combustivel.precoLitro} onChange={(e) => updateRouteFuel(r.id, { precoLitro: e.target.value === '' ? 0 : Number(e.target.value) })} />
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t border-[#E1EDFB] pt-3 text-[13px]">
+              <div className="flex items-center justify-between text-[12.5px]">
                 <span className="text-[#6B7F93]">Litros estimados</span>
                 <span className="mono text-[#33495E]">{r.combustivel.litrosEstimados.toFixed(2)} L</span>
               </div>
-              <div className="mt-1.5 flex items-center justify-between text-[14px]">
-                <span className="font-medium text-[#33495E]">Custo estimado</span>
-                <span className="mono font-semibold text-[#3B82F6]">{currency(r.combustivel.custoEstimado)}</span>
+              <div className="mt-2 flex items-center justify-between rounded-[8px] bg-[#3B82F6]/10 px-3 py-2.5">
+                <span className="text-[12.5px] font-medium text-[#33495E]">Custo estimado</span>
+                <span className="mono text-[19px] font-bold text-[#3B82F6]">{currency(r.combustivel.custoEstimado)}</span>
               </div>
             </Card>
 
             {r.iniciadaEm && (
-              <Card>
-                <div className="text-[11.5px] text-[#6B7F93]">Iniciada em {formatDateTime(r.iniciadaEm)}</div>
-                {r.finalizadaEm && <div className="mt-1 text-[11.5px] text-[#6B7F93]">Finalizada em {formatDateTime(r.finalizadaEm)}</div>}
-              </Card>
+              <p className="px-1 text-center text-[11px] text-[#93A5BC]">
+                Iniciada em {formatDateTime(r.iniciadaEm)}
+                {r.finalizadaEm && <> · Finalizada em {formatDateTime(r.finalizadaEm)}</>}
+              </p>
             )}
 
             {isPlanned && (
