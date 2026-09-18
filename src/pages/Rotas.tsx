@@ -7,7 +7,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-p
 import {
   Plus, Trash2, GripVertical, Wand2, Play, Flag, LocateFixed, Search,
   Gauge, Clock, Fuel, Pencil, X, Check, Route as RouteEmptyIcon, Compass,
-  Smartphone, List, PartyPopper, Star, Map, AlertCircle,
+  PartyPopper, Star, Map, AlertCircle,
 } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
 import { Card } from '../components/ui/Card'
@@ -48,12 +48,11 @@ function clientToStop(c: Client): DraftStop {
 type StopStatusPatch = Partial<Pick<RouteStop, 'status' | 'observacao' | 'resultado'>>
 
 function StopVisitCard({
-  routeId, stop, index, big, onStartVisit, onUpdateStatus,
+  routeId, stop, index, onStartVisit, onUpdateStatus,
 }: {
   routeId: string
   stop: RouteStop
   index: number
-  big?: boolean
   onStartVisit: (routeId: string, stopId: string) => void
   onUpdateStatus: (routeId: string, stopId: string, patch: StopStatusPatch) => void
 }) {
@@ -70,24 +69,24 @@ function StopVisitCard({
   }
 
   return (
-    <div className={`rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] ${big ? 'p-5' : 'p-3'}`}>
+    <div className="rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] p-3">
       <div className="flex items-center gap-2.5">
         <span
-          className={`mono flex shrink-0 items-center justify-center rounded-full font-bold ${big ? 'h-9 w-9 text-[13px] text-white' : 'h-6 w-6 text-[11px] text-[#0F2A44]'}`}
-          style={{ background: STOP_STATUS_COLOR[stop.status], color: big ? '#FFFFFF' : undefined }}
+          className="mono flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-[#0F2A44]"
+          style={{ background: STOP_STATUS_COLOR[stop.status] }}
         >
           {index + 1}
         </span>
         <div className="min-w-0 flex-1">
-          <div className={`truncate text-[#0F2A44] ${big ? 'text-[16px] font-semibold' : 'text-[13px]'}`}>{stop.nome}</div>
-          <div className={`truncate text-[#6B7F93] ${big ? 'text-[12.5px]' : 'text-[11px]'}`}>{stop.endereco}</div>
+          <div className="truncate text-[13px] text-[#0F2A44]">{stop.nome}</div>
+          <div className="truncate text-[11px] text-[#6B7F93]">{stop.endereco}</div>
         </div>
         {finished && !editing && (
           <button onClick={() => setEditing(true)} className="shrink-0 text-[#6B7F93] hover:text-[#0F2A44]"><Pencil size={13} /></button>
         )}
       </div>
 
-      <LocationButtons lat={stop.lat} lng={stop.lng} size={big ? 'md' : 'sm'} className="mt-3" />
+      <LocationButtons lat={stop.lat} lng={stop.lng} size="sm" className="mt-3" />
 
       {editing ? (
         <div className="mt-3 space-y-2">
@@ -135,7 +134,6 @@ export default function Rotas() {
   const [locationError, setLocationError] = useState<string | null>(null)
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
-  const [modoCampo, setModoCampo] = useState(false)
   const [kmRealInput, setKmRealInput] = useState('')
   const [navApp, setNavApp] = useState<'google' | 'waze'>('google')
   const [linkCopied, setLinkCopied] = useState(false)
@@ -286,14 +284,7 @@ export default function Rotas() {
           </div>
           <div className="flex gap-2">
             {isPlanned && <Button variant="secondary" onClick={() => optimizeRoute(r.id)}><Wand2 size={14} /> Otimizar rota</Button>}
-            {isActive && (
-              <>
-                <Button variant="secondary" onClick={() => setModoCampo((v) => !v)}>
-                  {modoCampo ? <List size={14} /> : <Smartphone size={14} />} {modoCampo ? 'Ver todas as paradas' : 'Modo Campo'}
-                </Button>
-                <Button onClick={handleFinishRoute}><Flag size={14} /> Finalizar rota</Button>
-              </>
-            )}
+            {isActive && <Button onClick={handleFinishRoute}><Flag size={14} /> Finalizar rota</Button>}
           </div>
         </div>
 
@@ -369,32 +360,6 @@ export default function Rotas() {
           </div>
         )}
 
-        {isActive && modoCampo ? (
-          <div className="mx-auto max-w-md">
-            {(() => {
-              const nextIdx = r.paradas.findIndex((p) => p.status === 'pendente')
-              const nextStop = nextIdx >= 0 ? r.paradas[nextIdx] : null
-              if (!nextStop) {
-                return (
-                  <div className="flex flex-col items-center gap-3 rounded-xl border border-[#CFE0F5] bg-[#EAF3FC] p-8 text-center">
-                    <PartyPopper size={28} className="text-[#16A34A]" />
-                    <div className="text-[15px] font-semibold text-[#0F2A44]">Todas as paradas foram registradas!</div>
-                    <p className="text-[12.5px] text-[#6B7F93]">Você concluiu {visitedCount} de {r.paradas.length} paradas desta rota.</p>
-                    <Button onClick={handleFinishRoute}><Flag size={14} /> Finalizar rota</Button>
-                  </div>
-                )
-              }
-              return (
-                <>
-                  <div className="mb-3 text-center text-[12px] font-medium text-[#6B7F93]">
-                    Próxima parada · {nextIdx + 1} de {r.paradas.length} · {visitedCount}/{r.paradas.length} registradas
-                  </div>
-                  <StopVisitCard key={nextStop.id} routeId={r.id} stop={nextStop} index={nextIdx} big onStartVisit={startStopVisit} onUpdateStatus={updateStopStatus} />
-                </>
-              )
-            })()}
-          </div>
-        ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
           <div className="flex flex-col gap-4">
             <div className="h-[300px] overflow-hidden rounded-xl border border-[#CFE0F5]">
@@ -542,7 +507,6 @@ export default function Rotas() {
             )}
           </div>
         </div>
-        )}
       </>
     )
   }
