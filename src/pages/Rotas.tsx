@@ -7,7 +7,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-p
 import {
   Plus, Trash2, GripVertical, Wand2, Play, Flag, LocateFixed, Search,
   Gauge, Clock, Fuel, Pencil, X, Check, MinusCircle, Route as RouteEmptyIcon, Compass,
-  Smartphone, List, PartyPopper, Star, Map, Navigation, AlertCircle, ArrowDown,
+  Smartphone, List, PartyPopper, Star, Map, AlertCircle,
 } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
 import { Card } from '../components/ui/Card'
@@ -138,6 +138,8 @@ export default function Rotas() {
   const [nameDraft, setNameDraft] = useState('')
   const [modoCampo, setModoCampo] = useState(false)
   const [kmRealInput, setKmRealInput] = useState('')
+  const [navApp, setNavApp] = useState<'google' | 'waze'>('google')
+  const [linkCopied, setLinkCopied] = useState(false)
 
   const routeId = params.get('id')
   const active = routes.filter((r) => r.status === 'em_andamento')
@@ -179,12 +181,6 @@ export default function Rotas() {
     reorderRouteStops(selectedRoute.id, ids)
   }
 
-  function handleFinishRoute(routeId: string) {
-    const km = kmRealInput.trim() === '' ? undefined : Number(kmRealInput)
-    finishRoute(routeId, km)
-    navigate('/historico')
-  }
-
   if (selectedRoute) {
     const r = selectedRoute
     // Uma parada com coordenada inválida (ex: dado antigo/corrompido) derrubaria o mapa inteiro do
@@ -195,13 +191,52 @@ export default function Rotas() {
     const isActive = r.status === 'em_andamento'
     const isDone = r.status === 'concluida'
     const visitedCount = r.paradas.filter((p) => p.status !== 'pendente').length
-    const fullRouteNav = buildFullRouteNavigation({ lat: r.origemLat, lng: r.origemLng }, r.paradas)
+    // Enquanto a rota não começou, a navegação cobre todas as paradas; depois de iniciada, só as que
+    // ainda faltam — assim "continuar navegação" não manda o representante rever quem já foi visitado.
+    const stopsForNav = isActive ? r.paradas.filter((p) => p.status === 'pendente') : r.paradas
+    const fullRouteNav = buildFullRouteNavigation({ lat: r.origemLat, lng: r.origemLng }, stopsForNav)
+    const primaryNavLink = fullRouteNav ? (navApp === 'google' ? fullRouteNav.googleMaps[0] : fullRouteNav.wazeLegs[0]) : undefined
+
+    function handleFinishRoute() {
+      const km = kmRealInput.trim() === '' ? undefined : Number(kmRealInput)
+      const pendentes = r.paradas.filter((p) => p.status === 'pendente').length
+      const concluidas = r.paradas.length - pendentes
+      const resumo = [
+        'Finalizar esta rota?',
+        '',
+        `${concluidas} parada${concluidas === 1 ? '' : 's'} concluída${concluidas === 1 ? '' : 's'}`,
+        `${pendentes} parada${pendentes === 1 ? '' : 's'} pendente${pendentes === 1 ? '' : 's'}`,
+        `Km planejado: ${r.distanciaKm} km`,
+        km != null ? `Km real informado: ${km} km` : null,
+        `Duração estimada: ~${Math.round((r.duracaoMin / 60) * 10) / 10}h`,
+      ].filter(Boolean).join('\n')
+      if (!confirm(resumo)) return
+      finishRoute(r.id, km)
+      navigate('/historico')
+    }
+
+    function handlePrimaryNavigation() {
+      if (!primaryNavLink) return
+      if (isPlanned) startRoute(r.id)
+      window.open(primaryNavLink.url, '_blank', 'noopener,noreferrer')
+    }
+
+    async function handleCopyLink() {
+      if (!primaryNavLink) return
+      try {
+        await navigator.clipboard.writeText(primaryNavLink.url)
+        setLinkCopied(true)
+        setTimeout(() => setLinkCopied(false), 2000)
+      } catch {
+        // Sem permissão de clipboard (ex: HTTP não seguro) — o link já está disponível no botão principal.
+      }
+    }
 
     return (
       <>
         <button onClick={() => navigate('/historico')} className="mb-3 text-[12.5px] text-[#6B7F93] hover:text-[#33495E]">← Ver histórico de rotas</button>
 
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             {editingName ? (
               <div className="flex items-center gap-2">
@@ -215,76 +250,69 @@ export default function Rotas() {
                 {!isDone && <button onClick={() => { setNameDraft(r.nome); setEditingName(true) }} className="text-[#6B7F93] hover:text-[#0F2A44]"><Pencil size={14} /></button>}
               </div>
             )}
-            <p className="mt-1 text-[13px] text-[#6B7F93]">
-              {r.paradas.length} paradas · {r.distanciaKm} km · ~{Math.round((r.duracaoMin / 60) * 10) / 10}h
+            <p className="mt-1 flex items-center gap-1.5 text-[13px] text-[#6B7F93]">
+              <span
+                className="rounded-full px-2 py-0.5 text-[11px] font-medium"
+                style={{ background: isDone ? '#E1EDFB' : isActive ? '#16A34A1A' : '#3B82F61A', color: isDone ? '#6B7F93' : isActive ? '#16A34A' : '#3B82F6' }}
+              >
+                {isDone ? 'Finalizada' : isActive ? 'Em andamento' : 'Não iniciada'}
+              </span>
+              · {r.paradas.length} paradas · {r.distanciaKm} km · ~{Math.round((r.duracaoMin / 60) * 10) / 10}h
               {isActive && <> · {visitedCount}/{r.paradas.length} registradas</>}
             </p>
           </div>
           <div className="flex gap-2">
-            {isPlanned && (
-              <>
-                <Button variant="secondary" onClick={() => optimizeRoute(r.id)}><Wand2 size={14} /> Otimizar rota</Button>
-                <Button onClick={() => startRoute(r.id)}><Play size={14} /> Iniciar rota</Button>
-              </>
-            )}
+            {isPlanned && <Button variant="secondary" onClick={() => optimizeRoute(r.id)}><Wand2 size={14} /> Otimizar rota</Button>}
             {isActive && (
               <>
                 <Button variant="secondary" onClick={() => setModoCampo((v) => !v)}>
                   {modoCampo ? <List size={14} /> : <Smartphone size={14} />} {modoCampo ? 'Ver todas as paradas' : 'Modo Campo'}
                 </Button>
-                <Button onClick={() => handleFinishRoute(r.id)}><Flag size={14} /> Finalizar rota</Button>
+                <Button onClick={handleFinishRoute}><Flag size={14} /> Finalizar rota</Button>
               </>
             )}
           </div>
         </div>
 
         {!isDone && (
-          <Card title={<span className="flex items-center gap-1.5 text-[13px] font-medium text-[#33495E]"><Map size={14} /> Rota Geral Completa</span>} className="mb-4">
-            {fullRouteNav ? (
+          <Card className="mb-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-[13px] font-medium text-[#33495E]"><Map size={14} /> Navegação da rota</span>
+              <div className="flex rounded-full border border-[#CFE0F5] p-0.5">
+                <button onClick={() => setNavApp('google')} className={`rounded-full px-2.5 py-1 text-[11.5px] font-medium ${navApp === 'google' ? 'bg-[#3B82F6] text-white' : 'text-[#6B7F93]'}`}>Google Maps</button>
+                <button onClick={() => setNavApp('waze')} className={`rounded-full px-2.5 py-1 text-[11.5px] font-medium ${navApp === 'waze' ? 'bg-[#3B82F6] text-white' : 'text-[#6B7F93]'}`}>Waze</button>
+              </div>
+            </div>
+
+            {fullRouteNav && fullRouteNav.skipped.length > 0 && (
+              <p className="mb-3 flex items-start gap-1.5 rounded-[8px] border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-3 py-2 text-[11.5px] text-[#B45309]">
+                <AlertCircle size={13} className="mt-0.5 shrink-0" />
+                {fullRouteNav.skipped.length === 1
+                  ? `"${fullRouteNav.skipped[0].nome}" ficou de fora da navegação por não ter coordenadas válidas.`
+                  : `${fullRouteNav.skipped.length} paradas ficaram de fora da navegação por não terem coordenadas válidas.`}
+              </p>
+            )}
+
+            {navApp === 'waze' && fullRouteNav && (fullRouteNav.wazeLegs.length > 1 || isActive) && (
+              <p className="mb-3 text-[11px] text-[#6B7F93]">
+                O Waze não aceita uma rota com várias paradas num único link — o botão abaixo abre sempre o trecho até a{isActive ? ' próxima' : ' primeira'} parada pendente; ao concluí-la, toque de novo para seguir para a seguinte.
+              </p>
+            )}
+
+            {primaryNavLink ? (
               <>
-                <div className="mb-3 space-y-1 text-[12.5px]">
-                  <div className="flex items-center gap-1.5 font-medium text-[#16A34A]"><LocateFixed size={12} /> Partida</div>
-                  {r.paradas.map((p, i) => (
-                    <div key={p.id} className="flex items-start gap-1.5 pl-1 text-[#33495E]">
-                      <ArrowDown size={12} className="mt-0.5 shrink-0 text-[#93A5BC]" />
-                      <span className="truncate">{i + 1}. {p.nome}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {fullRouteNav.skipped.length > 0 && (
-                  <p className="mb-3 flex items-start gap-1.5 rounded-[8px] border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-3 py-2 text-[11.5px] text-[#B45309]">
-                    <AlertCircle size={13} className="mt-0.5 shrink-0" />
-                    {fullRouteNav.skipped.length === 1
-                      ? `"${fullRouteNav.skipped[0].nome}" ficou de fora da rota completa por não ter coordenadas válidas.`
-                      : `${fullRouteNav.skipped.length} paradas ficaram de fora da rota completa por não terem coordenadas válidas.`}
-                  </p>
-                )}
-
-                <div className="space-y-1.5">
-                  {fullRouteNav.googleMaps.map((link, i) => (
-                    <Button key={i} variant="secondary" className="w-full !justify-start" onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}>
-                      <Map size={13} /> Abrir no Google Maps — {link.label}
-                    </Button>
-                  ))}
-                </div>
-
-                <div className="mt-3 border-t border-[#E1EDFB] pt-3">
-                  <p className="mb-2 text-[11px] text-[#6B7F93]">
-                    O Waze não aceita uma rota com várias paradas num único link — abra cada trecho abaixo na ordem, um de cada vez:
-                  </p>
-                  <div className="space-y-1.5">
-                    {fullRouteNav.wazeLegs.map((leg, i) => (
-                      <Button key={i} variant="secondary" className="w-full !justify-start" onClick={() => window.open(leg.url, '_blank', 'noopener,noreferrer')}>
-                        <Navigation size={13} /> {leg.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                <Button className="w-full" onClick={handlePrimaryNavigation}>
+                  <Play size={14} /> {isActive ? 'Continuar navegação' : 'Iniciar rota'} no {navApp === 'google' ? 'Google Maps' : 'Waze'}
+                </Button>
+                <button onClick={handleCopyLink} className="mt-2 flex w-full items-center justify-center gap-1.5 text-[11.5px] text-[#6B7F93] underline decoration-dotted hover:text-[#33495E]">
+                  {linkCopied ? 'Link copiado!' : 'Copiar link'}
+                </button>
               </>
+            ) : isActive ? (
+              <p className="flex items-center gap-1.5 text-[12.5px] text-[#16A34A]"><PartyPopper size={14} /> Todas as paradas com coordenada já foram visitadas — finalize a rota quando estiver pronto.</p>
             ) : (
               <p className="flex items-start gap-1.5 text-[12.5px] text-[#6B7F93]">
-                <AlertCircle size={13} className="mt-0.5 shrink-0" /> Nenhuma parada desta rota tem coordenadas válidas para gerar a navegação completa.
+                <AlertCircle size={13} className="mt-0.5 shrink-0" /> Nenhuma parada desta rota tem coordenadas válidas para gerar a navegação.
               </p>
             )}
           </Card>
@@ -309,7 +337,7 @@ export default function Rotas() {
                     <PartyPopper size={28} className="text-[#16A34A]" />
                     <div className="text-[15px] font-semibold text-[#0F2A44]">Todas as paradas foram registradas!</div>
                     <p className="text-[12.5px] text-[#6B7F93]">Você concluiu {visitedCount} de {r.paradas.length} paradas desta rota.</p>
-                    <Button onClick={() => handleFinishRoute(r.id)}><Flag size={14} /> Finalizar rota</Button>
+                    <Button onClick={handleFinishRoute}><Flag size={14} /> Finalizar rota</Button>
                   </div>
                 )
               }

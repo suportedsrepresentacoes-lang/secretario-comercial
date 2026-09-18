@@ -32,6 +32,9 @@ export function openNavigation(lat?: number | null, lng?: number | null, app: Na
 export interface RouteLink {
   label: string
   url: string
+  /** id da parada em que esta etapa termina — usado para achar "a próxima etapa a partir daqui"
+   *  mesmo quando alguma parada foi pulada por não ter coordenada válida. */
+  targetId?: string
 }
 
 export interface FullRouteNavigation {
@@ -54,14 +57,14 @@ const GOOGLE_MAPS_MAX_WAYPOINTS = 23
 
 export function buildFullRouteNavigation(
   origin: { lat: number; lng: number },
-  stops: { nome: string; lat?: number | null; lng?: number | null }[],
+  stops: { id: string; nome: string; lat?: number | null; lng?: number | null }[],
 ): FullRouteNavigation | null {
-  const valid = stops.filter((s) => hasValidCoords(s.lat, s.lng)) as { nome: string; lat: number; lng: number }[]
+  const valid = stops.filter((s) => hasValidCoords(s.lat, s.lng)) as { id: string; nome: string; lat: number; lng: number }[]
   const skipped = stops.filter((s) => !hasValidCoords(s.lat, s.lng)).map((s) => ({ nome: s.nome }))
   if (valid.length === 0) return null
 
   const googleMaps: RouteLink[] = []
-  const chunks: { nome: string; lat: number; lng: number }[][] = []
+  const chunks: { id: string; nome: string; lat: number; lng: number }[][] = []
   for (let i = 0; i < valid.length; i += GOOGLE_MAPS_MAX_WAYPOINTS + 1) {
     chunks.push(valid.slice(i, i + GOOGLE_MAPS_MAX_WAYPOINTS + 1))
   }
@@ -79,6 +82,7 @@ export function buildFullRouteNavigation(
     googleMaps.push({
       label: chunks.length === 1 ? `Rota completa (${chunk.length} parada${chunk.length > 1 ? 's' : ''})` : `Etapa ${i + 1} de ${chunks.length} (${chunk.length} paradas)`,
       url: `https://www.google.com/maps/dir/?${params.toString()}`,
+      targetId: destination.id,
     })
     chunkOrigin = destination
   })
@@ -86,6 +90,7 @@ export function buildFullRouteNavigation(
   const wazeLegs: RouteLink[] = valid.map((s, i) => ({
     label: i === 0 ? `Partida → 1. ${s.nome}` : `${i}. ${valid[i - 1].nome} → ${i + 1}. ${s.nome}`,
     url: `https://waze.com/ul?ll=${s.lat},${s.lng}&navigate=yes`,
+    targetId: s.id,
   }))
 
   return { googleMaps, wazeLegs, skipped }
