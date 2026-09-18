@@ -46,6 +46,8 @@ interface AppState {
   optimizeRoute: (routeId: string) => void
   reorderRouteStops: (routeId: string, orderedIds: string[]) => void
   removeStopFromRoute: (routeId: string, stopId: string) => void
+  addStopsToRoute: (routeId: string, stops: DraftStop[]) => void
+  updateRouteOrigin: (routeId: string, origin: { lat: number; lng: number }) => void
   updateRouteFuel: (routeId: string, patch: Partial<Pick<VehicleSettings, 'consumoKmL' | 'precoLitro'>>) => void
   startRoute: (routeId: string) => void
   startStopVisit: (routeId: string, stopId: string) => void
@@ -168,6 +170,56 @@ export const useAppStore = create<AppState>()(
         set((s) => ({ routes: s.routes.map((r) => (r.id === routeId ? { ...r, paradas: r.paradas.filter((p) => p.id !== stopId) } : r)) }))
         get().reorderRouteStops(routeId, orderedIds)
       },
+
+      // Só acrescenta ao fim, sem reotimizar sozinho — otimizar continua sendo uma ação explícita do
+      // usuário. Usado tanto para "adicionar cliente cadastrado" quanto para mesclar novos prospects
+      // encontrados em Buscar numa rota que já existe (planejada), sem criar uma segunda rota.
+      addStopsToRoute: (routeId, stops) =>
+        set((s) => ({
+          routes: s.routes.map((r) => {
+            if (r.id !== routeId) return r
+            const paradas = [...r.paradas, ...stops.map(stopFromDraft)]
+            const origin = { lat: r.origemLat, lng: r.origemLng }
+            let current = origin
+            let distanciaKm = 0
+            for (const p of paradas) {
+              distanciaKm += haversineKm(current, p)
+              current = p
+            }
+            distanciaKm = Math.round(distanciaKm * 10) / 10
+            return {
+              ...r,
+              paradas,
+              distanciaKm,
+              duracaoMin: estimateDurationMin(distanciaKm, paradas.length),
+              combustivel: estimateFuel(distanciaKm, r.combustivel.consumoKmL, r.combustivel.precoLitro),
+            }
+          }),
+        })),
+
+      // Mantém a ordem das paradas como está (otimizar é ação separada) — só recalcula a distância a
+      // partir do novo ponto de partida. Só faz sentido chamar isso enquanto a rota ainda não começou.
+      updateRouteOrigin: (routeId, origin) =>
+        set((s) => ({
+          routes: s.routes.map((r) => {
+            if (r.id !== routeId) return r
+            let current = origin
+            let distanciaKm = 0
+            for (const p of r.paradas) {
+              distanciaKm += haversineKm(current, p)
+              current = p
+            }
+            distanciaKm = Math.round(distanciaKm * 10) / 10
+            return {
+              ...r,
+              origemLat: origin.lat,
+              origemLng: origin.lng,
+              distanciaKm,
+              duracaoMin: estimateDurationMin(distanciaKm, r.paradas.length),
+              combustivel: estimateFuel(distanciaKm, r.combustivel.consumoKmL, r.combustivel.precoLitro),
+            }
+          }),
+        })),
 
       updateRouteFuel: (routeId, patch) =>
         set((s) => ({

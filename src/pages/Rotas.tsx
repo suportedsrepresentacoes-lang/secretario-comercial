@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet'
 import L from 'leaflet'
@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css'
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
   Plus, Trash2, GripVertical, Wand2, Play, Flag, LocateFixed, Search,
-  Gauge, Clock, Fuel, Pencil, X, Check, MinusCircle, Route as RouteEmptyIcon, Compass,
+  Gauge, Clock, Fuel, Pencil, X, Check, Route as RouteEmptyIcon, Compass,
   Smartphone, List, PartyPopper, Star, Map, AlertCircle,
 } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
@@ -125,12 +125,11 @@ export default function Rotas() {
   const [params, setParams] = useSearchParams()
   const {
     routes, clients, draftOrigin, draftStops, favorites,
-    setDraftOrigin, toggleDraftStop, removeDraftStop, clearDraft, addFavorite,
-    createRoute, optimizeRoute, reorderRouteStops, removeStopFromRoute,
+    setDraftOrigin, clearDraft, addFavorite,
+    createRoute, optimizeRoute, reorderRouteStops, removeStopFromRoute, addStopsToRoute, updateRouteOrigin,
     updateRouteFuel, startRoute, startStopVisit, updateStopStatus, finishRoute, deleteRoute, renameRoute,
   } = useAppStore()
 
-  const [routeName, setRouteName] = useState('Rota de hoje')
   const [clientQuery, setClientQuery] = useState('')
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
@@ -145,32 +144,56 @@ export default function Rotas() {
   const active = routes.filter((r) => r.status === 'em_andamento')
   const selectedRoute = routes.find((r) => r.id === routeId) ?? (!routeId ? active[0] : undefined)
 
-  const matchingClients = useMemo(() => {
-    if (!clientQuery.trim()) return []
-    const q = clientQuery.toLowerCase()
-    const draftIds = new Set(draftStops.map((p) => p.id))
-    return clients.filter((c) => !draftIds.has(c.id) && c.nomeFantasia.toLowerCase().includes(q)).slice(0, 6)
-  }, [clientQuery, clients, draftStops])
+  // Elimina a etapa separada de "criar rota": assim que existem paradas escolhidas (via Buscar ou
+  // aqui mesmo), a rota nasce sozinha — o usuário nunca vê um formulário à parte. Se já existir uma
+  // rota planejada (ainda não iniciada), as novas paradas se juntam a ela em vez de criar outra rota.
+  //
+  // O ref evita processar a mesma leva de draftStops duas vezes: o React (StrictMode, em
+  // desenvolvimento) roda efeitos duas vezes de propósito para pegar efeitos colaterais não
+  // idempotentes como este — sem essa proteção, a parada seria duplicada na segunda chamada, antes
+  // do clearDraft() da primeira conseguir se refletir no fechamento (closure) deste mesmo efeito.
+  const draftBatchProcessed = useRef<DraftStop[] | null>(null)
+  useEffect(() => {
+    if (draftStops.length === 0) return
+    if (draftBatchProcessed.current === draftStops) return
+    draftBatchProcessed.current = draftStops
+
+    if (selectedRoute) {
+      if (selectedRoute.status === 'planejada') {
+        addStopsToRoute(selectedRoute.id, draftStops)
+        clearDraft()
+      }
+      return
+    }
+    const origin = draftOrigin ?? { lat: HOME_BASE.lat, lng: HOME_BASE.lng }
+    const route = createRoute({ nome: 'Rota de hoje', origemLat: origin.lat, origemLng: origin.lng, paradas: draftStops })
+    clearDraft()
+    setParams({ id: route.id })
+  }, [draftStops, selectedRoute, draftOrigin, addStopsToRoute, clearDraft, createRoute, setParams])
+
+  const clientIdsNaRota = new Set(
+    selectedRoute ? selectedRoute.paradas.map((p) => p.clientId).filter((id): id is string => !!id) : draftStops.map((p) => p.id),
+  )
+  const matchingClients = clientQuery.trim()
+    ? clients.filter((c) => !clientIdsNaRota.has(c.id) && c.nomeFantasia.toLowerCase().includes(clientQuery.toLowerCase())).slice(0, 6)
+    : []
+
+  function setOriginTo(lat: number, lng: number) {
+    if (selectedRoute && selectedRoute.status === 'planejada') updateRouteOrigin(selectedRoute.id, { lat, lng })
+    else setDraftOrigin({ lat, lng })
+  }
 
   async function handleLocate() {
     setLocating(true)
     setLocationError(null)
     try {
       const pos = await getCurrentPosition()
-      setDraftOrigin({ lat: pos.lat, lng: pos.lng })
+      setOriginTo(pos.lat, pos.lng)
     } catch (err) {
       setLocationError(err instanceof Error ? err.message : 'Não foi possível obter sua localização.')
     } finally {
       setLocating(false)
     }
-  }
-
-  function handleCreateRoute() {
-    if (draftStops.length === 0) return
-    const origin = draftOrigin ?? { lat: HOME_BASE.lat, lng: HOME_BASE.lng }
-    const route = createRoute({ nome: routeName.trim() || 'Rota de hoje', origemLat: origin.lat, origemLng: origin.lng, paradas: draftStops })
-    clearDraft()
-    setParams({ id: route.id })
   }
 
   function onDragEnd(result: DropResult) {
@@ -274,6 +297,26 @@ export default function Rotas() {
           </div>
         </div>
 
+        {isPlanned && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2.5 text-[12.5px]">
+            <LocateFixed size={14} className="shrink-0 text-[#3B82F6]" />
+            <span className="text-[#33495E]">Ponto de partida definido</span>
+            <button onClick={handleLocate} disabled={locating} className="text-[11px] font-medium text-[#3B82F6] underline decoration-dotted disabled:opacity-60">
+              {locating ? 'localizando…' : 'usar minha localização atual'}
+            </button>
+            {favorites.map((f) => (
+              <button key={f.id} onClick={() => setOriginTo(f.lat, f.lng)} className="rounded-full border border-[#CFE0F5] bg-white px-2 py-0.5 text-[11px] text-[#33495E] hover:bg-[#DCEAFB]">{f.nome}</button>
+            ))}
+            <button
+              onClick={() => { const nome = prompt('Nome deste local (ex: Casa, Escritório)'); if (nome) addFavorite({ nome, lat: r.origemLat, lng: r.origemLng }) }}
+              className="ml-auto flex items-center gap-1 text-[11px] text-[#6B7F93] underline decoration-dotted"
+            >
+              <Star size={11} /> salvar como favorito
+            </button>
+            {locationError && <p className="w-full text-[11px] text-[#EF4444]">{locationError}</p>}
+          </div>
+        )}
+
         {!isDone && (
           <Card className="mb-4">
             <div className="mb-3 flex items-center justify-between">
@@ -368,6 +411,27 @@ export default function Rotas() {
             </div>
 
             <Card title={isPlanned ? 'Paradas (arraste para reordenar)' : 'Paradas'}>
+              {isPlanned && (
+                <div className="relative mb-3">
+                  <div className="flex items-center gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2 text-[13px] text-[#6B7F93]">
+                    <Search size={14} />
+                    <input value={clientQuery} onChange={(e) => setClientQuery(e.target.value)} placeholder="Adicionar cliente cadastrado…" className="w-full bg-transparent text-[#0F2A44] outline-none placeholder:text-[#6B7F93]" />
+                  </div>
+                  {matchingClients.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-[8px] border border-[#CFE0F5] bg-white shadow-xl">
+                      {matchingClients.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => { addStopsToRoute(r.id, [clientToStop(c)]); setClientQuery('') }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] hover:bg-[#DCEAFB]"
+                        >
+                          <Plus size={13} className="text-[#3B82F6]" /> {c.nomeFantasia}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {isPlanned ? (
                 <DragDropContext onDragEnd={onDragEnd}>
                   <Droppable droppableId="stops">
@@ -497,83 +561,7 @@ export default function Rotas() {
     )
   }
 
-  return (
-    <>
-      <div className="mb-5">
-        <h1 className="text-[20px] font-bold">Rota</h1>
-        <p className="mt-1 text-[13px] text-[#6B7F93]">Revise as paradas, defina a origem e crie a rota otimizada</p>
-      </div>
-
-      <Card title="Nova rota" className="mx-auto max-w-xl">
-        <div className="mb-4">
-          <label className="mb-1.5 block text-[12px] font-medium text-[#6B7F93]">Ponto de partida</label>
-          {draftOrigin ? (
-            <div className="flex items-center justify-between gap-2 rounded-[8px] border border-[#16A34A]/30 bg-[#16A34A]/10 px-3 py-2 text-[12.5px] text-[#16A34A]">
-              <span className="flex items-center gap-1.5"><LocateFixed size={14} /> Você está aqui</span>
-              <div className="flex items-center gap-2">
-                <button onClick={() => { const nome = prompt('Nome deste local (ex: Casa, Escritório)'); if (nome) addFavorite({ nome, lat: draftOrigin.lat, lng: draftOrigin.lng }) }} className="flex items-center gap-1 text-[11px] underline decoration-dotted"><Star size={11} /> salvar</button>
-                <button onClick={handleLocate} className="text-[11px] underline decoration-dotted">atualizar</button>
-              </div>
-            </div>
-          ) : (
-            <Button variant="secondary" className="w-full" onClick={handleLocate} disabled={locating}>
-              <LocateFixed size={14} /> {locating ? 'Localizando…' : 'Usar minha localização atual'}
-            </Button>
-          )}
-          {favorites.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {favorites.map((f) => (
-                <button key={f.id} onClick={() => setDraftOrigin({ lat: f.lat, lng: f.lng })} className="rounded-full border border-[#CFE0F5] bg-[#EAF3FC] px-2.5 py-1 text-[11px] text-[#33495E] hover:bg-[#DCEAFB]">{f.nome}</button>
-              ))}
-            </div>
-          )}
-          {locationError && <p className="mt-1.5 text-[11px] text-[#EF4444]">{locationError}</p>}
-          {!draftOrigin && <p className="mt-1.5 text-[11px] text-[#6B7F93]">Sem localização definida, a rota usa um ponto de partida padrão.</p>}
-        </div>
-
-        <div className="mb-4">
-          <label className="mb-1.5 block text-[12px] font-medium text-[#6B7F93]">Paradas selecionadas ({draftStops.length})</label>
-          <div className="space-y-1.5">
-            {draftStops.map((p) => (
-              <div key={p.id} className="flex items-center justify-between gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-2.5 py-2">
-                <div className="min-w-0">
-                  <div className="truncate text-[12.5px] text-[#0F2A44]">{p.nome}</div>
-                  <div className="truncate text-[10.5px] text-[#6B7F93]">{p.origem === 'cliente' ? 'cliente cadastrado' : 'prospecção'}</div>
-                </div>
-                <button onClick={() => removeDraftStop(p.id)} className="shrink-0 text-[#6B7F93] hover:text-[#EF4444]"><MinusCircle size={15} /></button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="mb-1.5 block text-[12px] font-medium text-[#6B7F93]">Adicionar cliente cadastrado</label>
-          <div className="relative">
-            <div className="flex items-center gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2 text-[13px] text-[#6B7F93]">
-              <Search size={14} />
-              <input value={clientQuery} onChange={(e) => setClientQuery(e.target.value)} placeholder="Buscar por nome…" className="w-full bg-transparent text-[#0F2A44] outline-none placeholder:text-[#6B7F93]" />
-            </div>
-            {matchingClients.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-[8px] border border-[#CFE0F5] bg-white shadow-xl">
-                {matchingClients.map((c) => (
-                  <button key={c.id} onClick={() => { toggleDraftStop(clientToStop(c)); setClientQuery('') }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12.5px] hover:bg-[#DCEAFB]">
-                    <Plus size={13} className="text-[#3B82F6]" /> {c.nomeFantasia}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="mb-1.5 block text-[12px] font-medium text-[#6B7F93]">Nome da rota</label>
-          <Input value={routeName} onChange={(e) => setRouteName(e.target.value)} placeholder="Ex: Rota Goiânia" />
-        </div>
-
-        <Button className="w-full" disabled={draftStops.length === 0} onClick={handleCreateRoute}>
-          <Wand2 size={14} /> Criar e otimizar rota
-        </Button>
-      </Card>
-    </>
-  )
+  // draftStops.length > 0 mas o efeito acima ainda não terminou de criar/mesclar a rota nesta mesma
+  // renderização — dura só um frame; nunca é uma tela própria que o usuário precise atravessar.
+  return <div className="flex items-center justify-center py-24 text-[13px] text-[#6B7F93]">Preparando sua rota…</div>
 }
