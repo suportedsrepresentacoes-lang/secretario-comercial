@@ -7,7 +7,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-p
 import {
   Plus, Trash2, GripVertical, Wand2, Play, Flag, LocateFixed, Search,
   Gauge, Clock, Fuel, Pencil, X, Check, MinusCircle, Route as RouteEmptyIcon, Compass,
-  Smartphone, List, PartyPopper, Star,
+  Smartphone, List, PartyPopper, Star, Map, Navigation, AlertCircle, ArrowDown,
 } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
 import { Card } from '../components/ui/Card'
@@ -15,6 +15,7 @@ import { Button } from '../components/ui/Button'
 import { Input, Textarea } from '../components/ui/Field'
 import { LocationButtons } from '../components/ui/LocationButtons'
 import { getCurrentPosition } from '../services/geolocation'
+import { buildFullRouteNavigation, hasValidCoords } from '../services/navigation'
 import { currency, formatDateTime } from '../lib/format'
 import { STOP_STATUS_COLOR, STOP_STATUS_LABEL, VISIT_RESULTADO_LABEL, stopStatusForResultado } from '../lib/labels'
 import { HOME_BASE } from '../data/seed'
@@ -186,11 +187,15 @@ export default function Rotas() {
 
   if (selectedRoute) {
     const r = selectedRoute
-    const polyline: [number, number][] = [[r.origemLat, r.origemLng], ...r.paradas.map((p) => [p.lat, p.lng] as [number, number])]
+    // Uma parada com coordenada inválida (ex: dado antigo/corrompido) derrubaria o mapa inteiro do
+    // Leaflet sem esse filtro — o resto da rota continua sendo exibido normalmente.
+    const paradasComCoordenada = r.paradas.filter((p) => hasValidCoords(p.lat, p.lng))
+    const polyline: [number, number][] = [[r.origemLat, r.origemLng], ...paradasComCoordenada.map((p) => [p.lat, p.lng] as [number, number])]
     const isPlanned = r.status === 'planejada'
     const isActive = r.status === 'em_andamento'
     const isDone = r.status === 'concluida'
     const visitedCount = r.paradas.filter((p) => p.status !== 'pendente').length
+    const fullRouteNav = buildFullRouteNavigation({ lat: r.origemLat, lng: r.origemLng }, r.paradas)
 
     return (
       <>
@@ -233,6 +238,58 @@ export default function Rotas() {
           </div>
         </div>
 
+        {!isDone && (
+          <Card title={<span className="flex items-center gap-1.5 text-[13px] font-medium text-[#33495E]"><Map size={14} /> Rota Geral Completa</span>} className="mb-4">
+            {fullRouteNav ? (
+              <>
+                <div className="mb-3 space-y-1 text-[12.5px]">
+                  <div className="flex items-center gap-1.5 font-medium text-[#16A34A]"><LocateFixed size={12} /> Partida</div>
+                  {r.paradas.map((p, i) => (
+                    <div key={p.id} className="flex items-start gap-1.5 pl-1 text-[#33495E]">
+                      <ArrowDown size={12} className="mt-0.5 shrink-0 text-[#93A5BC]" />
+                      <span className="truncate">{i + 1}. {p.nome}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {fullRouteNav.skipped.length > 0 && (
+                  <p className="mb-3 flex items-start gap-1.5 rounded-[8px] border border-[#F59E0B]/40 bg-[#F59E0B]/10 px-3 py-2 text-[11.5px] text-[#B45309]">
+                    <AlertCircle size={13} className="mt-0.5 shrink-0" />
+                    {fullRouteNav.skipped.length === 1
+                      ? `"${fullRouteNav.skipped[0].nome}" ficou de fora da rota completa por não ter coordenadas válidas.`
+                      : `${fullRouteNav.skipped.length} paradas ficaram de fora da rota completa por não terem coordenadas válidas.`}
+                  </p>
+                )}
+
+                <div className="space-y-1.5">
+                  {fullRouteNav.googleMaps.map((link, i) => (
+                    <Button key={i} variant="secondary" className="w-full !justify-start" onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}>
+                      <Map size={13} /> Abrir no Google Maps — {link.label}
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="mt-3 border-t border-[#E1EDFB] pt-3">
+                  <p className="mb-2 text-[11px] text-[#6B7F93]">
+                    O Waze não aceita uma rota com várias paradas num único link — abra cada trecho abaixo na ordem, um de cada vez:
+                  </p>
+                  <div className="space-y-1.5">
+                    {fullRouteNav.wazeLegs.map((leg, i) => (
+                      <Button key={i} variant="secondary" className="w-full !justify-start" onClick={() => window.open(leg.url, '_blank', 'noopener,noreferrer')}>
+                        <Navigation size={13} /> {leg.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="flex items-start gap-1.5 text-[12.5px] text-[#6B7F93]">
+                <AlertCircle size={13} className="mt-0.5 shrink-0" /> Nenhuma parada desta rota tem coordenadas válidas para gerar a navegação completa.
+              </p>
+            )}
+          </Card>
+        )}
+
         {isActive && (
           <div className="mb-4 flex items-center gap-2 rounded-[8px] border border-[#CFE0F5] bg-[#EAF3FC] px-3 py-2.5">
             <Gauge size={14} className="shrink-0 text-[#6B7F93]" />
@@ -273,9 +330,11 @@ export default function Rotas() {
               <MapContainer center={[r.origemLat, r.origemLng]} zoom={12} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
                 <Marker position={[r.origemLat, r.origemLng]} icon={homeIcon}><Popup>Ponto de partida</Popup></Marker>
-                {r.paradas.map((p, idx) => (
-                  <Marker key={p.id} position={[p.lat, p.lng]} icon={numberIcon(idx + 1, STOP_STATUS_COLOR[p.status])}><Popup>{idx + 1}. {p.nome}</Popup></Marker>
-                ))}
+                {r.paradas.map((p, idx) =>
+                  hasValidCoords(p.lat, p.lng) ? (
+                    <Marker key={p.id} position={[p.lat, p.lng]} icon={numberIcon(idx + 1, STOP_STATUS_COLOR[p.status])}><Popup>{idx + 1}. {p.nome}</Popup></Marker>
+                  ) : null,
+                )}
                 <Polyline positions={polyline} pathOptions={{ color: '#3B82F6', weight: 3, opacity: 0.75, dashArray: '6 6' }} />
               </MapContainer>
             </div>
